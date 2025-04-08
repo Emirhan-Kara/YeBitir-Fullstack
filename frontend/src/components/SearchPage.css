@@ -1,0 +1,297 @@
+/* SearchPage.css - Style definitions for the YeBitir search page */
+
+/* Animation for floating food icons */
+@keyframes float {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(5deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+  }
+  
+  .animate-float {
+    animation: float 15s ease-in-out infinite;
+  }
+  
+  /* Text gradient effect for headings */
+  .text-gradient {
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    /* Note: The actual gradient colors would be provided by JS/inline styles */
+    /* background-image: linear-gradient(135deg, #c0392b, #333); */
+  }
+  
+  /* Background pattern for hero sections */
+  .bg-pattern {
+    background-image: radial-gradient(#333 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  
+  /* Curve divider styles for section separators */
+  .curve-divider {
+    display: block;
+    width: 100%;
+    line-height: 0;
+    margin: 0;
+    z-index: 1;
+    position: relative;
+  }
+  
+  .curve-divider svg {
+    display: block;
+    width: 100%;
+    height: 120px;
+  }
+  
+  /* Make dividers responsive */
+  @media (max-width: 768px) {
+    .curve-divider svg {
+      height: 80px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .curve-divider svg {
+      height: 60px;
+    }
+  }
+  
+  /* Filter sidebar styles */
+  .search-filters {
+    border-radius: 30px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    padding: 1.5rem;
+  }
+  
+  .filter-heading {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+  }
+  
+  .filter-section {
+    margin-bottom: 1.5rem;
+  }
+  
+  .filter-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+  
+  .filter-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 15px;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+  
+  .filter-input:focus {
+    box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.5);
+  }
+  
+  .filter-slider-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .filter-slider {
+    width: 75%;
+  }
+  
+  .filter-value-badge {
+    margin-left: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+  }
+  
+  .filter-reset-button {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 15px;
+    font-weight: 500;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+  
+  .filter-reset-button:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: scale(1.02);
+  }
+  
+  /* Recipe listing section */
+  .recipe-header {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    border-radius: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  @media (min-width: 768px) {
+    .recipe-header {
+      flex-direction: row;
+    }
+  }
+  
+  .recipe-count-badge {
+    margin-left: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+  }
+  
+  .sort-container {
+    display: flex;
+    align-items: center;
+  }
+  
+  .sort-label {
+    margin-right: 0.5rem;
+    font-weight: 500;
+  }
+  
+  .sort-select {
+    padding: 0.5rem 1rem;
+    border-radius: 15px;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+  
+  .sort-select:focus {
+    box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.5);
+  }
+  
+  .recipe-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+  }
+  
+  @media (min-width: 768px) {
+    .recipe-grid {
+      justify-content: flex-start;
+    }
+  }
+  
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  .empty-emoji {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+  
+  .empty-heading {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  
+  .empty-message {
+    margin-bottom: 1rem;
+  }
+  
+  .empty-reset-button {
+    padding: 0.5rem 1.5rem;
+    border-radius: 9999px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+  
+  .empty-reset-button:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: scale(1.02);
+  }
+  
+  /* Mobile filter toggle */
+  .mobile-filter-toggle {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 15px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+  
+  .toggle-icon {
+    transition: transform 0.3s ease;
+  }
+  
+  .toggle-icon-open {
+    transform: rotate(180deg);
+  }
+  
+  /* Hero section */
+  .hero-section {
+    position: relative;
+    padding: 2rem 0;
+    overflow: hidden;
+  }
+  
+  .hero-background {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  
+  .hero-pattern {
+    position: absolute;
+    inset: 0;
+    opacity: 0.1;
+  }
+  
+  .hero-icons-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .hero-icon {
+    position: absolute;
+    animation: float 15s ease-in-out infinite;
+    opacity: 0.2;
+  }
+  
+  .hero-content {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+  }
+  
+  .hero-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+  }
+  
+  @media (min-width: 768px) {
+    .hero-title {
+      font-size: 3.75rem;
+    }
+  }
+  
+  .hero-subtitle {
+    font-size: 1.125rem;
+    max-width: 48rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  @media (min-width: 768px) {
+    .hero-subtitle {
+      font-size: 1.25rem;
+    }
+  }

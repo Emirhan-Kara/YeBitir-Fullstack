@@ -1,0 +1,320 @@
+/* Login.css */
+.bg-pattern {
+    background-image: radial-gradient(currentColor 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  
+  .edgy-title {
+    position: relative;
+  }
+  
+  .edgy-title:after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 4px;
+    background: var(--color-header-footer-logo-red, #8B0000);
+    clip-path: polygon(0 0, 100% 0, 90% 100%, 10% 100%);
+  }
+  
+  .edgy-form-container {
+    clip-path: polygon(0 0, 100% 0, 97% 100%, 3% 100%);
+    backdrop-filter: blur(8px);
+  }
+  
+  .edgy-input {
+    clip-path: polygon(0 0, 100% 0, 97% 100%, 3% 100%);
+  }
+  
+  .edgy-button {
+    clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
+  }
+  
+  @keyframes float {
+    0% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+    100% {
+      transform: translateY(0px);
+    }
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(-5px);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(5px);
+    }
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.8s ease-out forwards;
+  }
+  
+  .delay-200 {
+    animation-delay: 0.2s;
+  }
+  
+  .delay-300 {
+    animation-delay: 0.3s;
+  }
+  
+  .delay-400 {
+    animation-delay: 0.4s;
+  }
+  
+  .animate-shake {
+    animation: shake 0.6s ease-in-out;
+  }
+  
+  .shape-container {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+  
+  .login-container {
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .theme-toggle-position {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 20;
+  }
+  
+  .login-card {
+    position: relative;
+    overflow: hidden;
+    padding: 2rem 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .google-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    transform: scale(1);
+  }
+  
+  .google-btn:hover {
+    transform: scale(1.05);
+  }
+  
+  .login-btn {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    transition: all 0.3s ease;
+    transform: scale(1);
+  }
+  
+  .login-btn:hover {
+    transform: scale(1.05);
+  }
+  
+  .input-with-icon {
+    position: relative;
+  }
+  
+  .input-icon {
+    position: absolute;
+    top: 50%;
+    left: 0.75rem;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  
+  .custom-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    transition: all 0.3s ease;
+  }
+  
+  .custom-input:focus {
+    outline: none;
+    border-color: var(--color-header-footer-logo-red, #8B0000);
+    box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
+  }
+  
+  .custom-input:hover {
+    transform: scale(1.02);
+  }
+  
+  /* Modal styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+    backdrop-filter: blur(6px);
+    transition: all 0.3s ease-in-out;
+  }
+  
+  .modal-container {
+    position: relative;
+    width: 100%;
+    max-width: 450px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    transform: translateY(0);
+    transition: transform 0.3s ease-in-out;
+    animation: modalAppear 0.3s ease-out forwards;
+  }
+  
+  @keyframes modalAppear {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    position: relative;
+  }
+  
+  .modal-body {
+    padding: 1rem 1.5rem 1.5rem;
+  }
+  
+  .modal-footer {
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+  
+  .close-button {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+    border-radius: 50%;
+  }
+  
+  .close-button:hover {
+    transform: scale(1.1);
+  }
+  
+  .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  
+  .modal-backdrop {
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    z-index: -1;
+    opacity: 0.1;
+  }
+  
+  .modal-submit-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .modal-submit-btn:hover {
+    transform: scale(1.05);
+  }
+  
+  .modal-success-icon {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+  
+  /* Close button animation */
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .animate-spin {
+    animation: spin 0.6s linear;
+  }

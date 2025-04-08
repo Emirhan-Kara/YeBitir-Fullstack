@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+:root {
+  /* Theme transition variables */
+  --theme-transition-duration: 0.3s;
+  --theme-transition-timing: ease-in-out;
+  
+  /* Recipe Card variables */
+  --color-recipe-card-background: #e2ece0;    /* mint-green */
+  --color-recipe-card-text: #34495e;          /* dark blue */
+  --color-recipe-card-component: #34495e;     /* dark blue */
+  --color-recipe-card-component-text: #e0e0e0; /* white */
+  
+  /* Header/Footer variables */
+  --color-header-footer-text: #606060;          /* dark gray */
+  --color-header-footer-logo-red: #82261b;      /* dark-red */
+  --color-header-footer-background: #cfd8dc;    /* light gray */
+  --color-header-footer-component-bg: #e0e0e0;  /* white */
+  --color-header-footer-search-box: #e2ece0;    /* mint-green */
+  
+  /* Core theme variables */
+  --color-core-background: #e0e0e0;    /* white */
+  --color-core-container: #e2ece0;     /* mint-green */
+  --color-core-container-hover: #9eb29a; /* darker mint-green */
+  --color-core-text: #34495e;          /* dark blue */
+}
+
+/* Apply transitions to all elements */
+* {
+  transition: background-color var(--theme-transition-duration) var(--theme-transition-timing),
+              color var(--theme-transition-duration) var(--theme-transition-timing),
+              border-color var(--theme-transition-duration) var(--theme-transition-timing),
+              fill var(--theme-transition-duration) var(--theme-transition-timing),
+              stroke var(--theme-transition-duration) var(--theme-transition-timing),
+              box-shadow var(--theme-transition-duration) var(--theme-transition-timing);
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-core-background);
+  color: var(--color-core-text);
+}
+
+/* Apply enhanced theme transition to common elements */
+a, button, input, select, textarea, .hover-transition {
+  transition: all var(--theme-transition-duration) var(--theme-transition-timing);
+}
+
+/* Ensure SVGs transition smoothly */
+svg, svg *, path, rect, circle, line {
+  transition: fill var(--theme-transition-duration) var(--theme-transition-timing),
+              stroke var(--theme-transition-duration) var(--theme-transition-timing),
+              color var(--theme-transition-duration) var(--theme-transition-timing);
+}
+
+/* Optional: Add a class to disable transitions in specific cases */
+.no-transition,
+.no-transition * {
+  transition: none !important;
+}
+
+/* Theme utility classes */
+.bg-recipe-card {
+  background-color: var(--color-recipe-card-background);
+}
+.text-recipe-card {
+  color: var(--color-recipe-card-text);
+}
+.bg-recipe-component {
+  background-color: var(--color-recipe-card-component);
+}
+.text-recipe-component {
+  color: var(--color-recipe-card-component-text);
+}
+
+.bg-header-footer {
+  background-color: var(--color-header-footer-background);
+}
+.text-header-footer {
+  color: var(--color-header-footer-text);
+}
+.text-logo-red {
+  color: var(--color-header-footer-logo-red);
+}
+.bg-header-component {
+  background-color: var(--color-header-footer-component-bg);
+}
+.bg-search-box {
+  background-color: var(--color-header-footer-search-box);
+}
+
+.bg-core {
+  background-color: var(--color-core-background);
+}
+.bg-container {
+  background-color: var(--color-core-container);
+}
+.text-core {
+  color: var(--color-core-text);
+}
+.hover\:bg-container-hover:hover {
+  background-color: var(--color-core-container-hover);
+}

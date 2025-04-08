@@ -1,0 +1,251 @@
+/* SignUp.css */
+.bg-pattern {
+    background-image: radial-gradient(currentColor 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  
+  .edgy-title {
+    position: relative;
+  }
+  
+  .edgy-title:after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 4px;
+    background: var(--color-header-footer-logo-red, #8B0000);
+    clip-path: polygon(0 0, 100% 0, 90% 100%, 10% 100%);
+  }
+  
+  .edgy-form-container {
+    clip-path: polygon(0 0, 100% 0, 97% 100%, 3% 100%);
+    backdrop-filter: blur(8px);
+  }
+  
+  .edgy-input {
+    clip-path: polygon(0 0, 100% 0, 97% 100%, 3% 100%);
+  }
+  
+  .edgy-button {
+    clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
+  }
+  
+  @keyframes float {
+    0% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+    100% {
+      transform: translateY(0px);
+    }
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes successAnimation {
+    0% {
+      transform: translateY(10px);
+      opacity: 0;
+    }
+    50% {
+      transform: translateY(-5px);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes successPulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 15px rgba(34, 197, 94, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    }
+  }
+  
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(-2px);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(2px);
+    }
+  }
+  
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+  
+  .animate-success {
+    animation: successAnimation 0.5s ease-out forwards,
+               successPulse 2s ease-in-out infinite;
+    background: linear-gradient(to right bottom, #dcfce7, #bbf7d0);
+    border-color: #22c55e;
+  }
+  
+  .delay-200 {
+    animation-delay: 0.2s;
+  }
+  
+  .delay-300 {
+    animation-delay: 0.3s;
+  }
+  
+  .delay-400 {
+    animation-delay: 0.4s;
+  }
+  
+  .animate-shake {
+    animation: shake 0.4s ease-in-out;
+  }
+  
+  .shape-container {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+  
+  .signup-container {
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .theme-toggle-position {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 20;
+  }
+  
+  .signup-card {
+    position: relative;
+    overflow: hidden;
+    padding: 2rem 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .google-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    transform: scale(1);
+  }
+  
+  .google-btn:hover {
+    transform: scale(1.05);
+  }
+  
+  .signup-btn {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    transition: all 0.3s ease;
+    transform: scale(1);
+  }
+  
+  .signup-btn:hover {
+    transform: scale(1.05);
+  }
+  
+  .input-with-icon {
+    position: relative;
+  }
+  
+  .input-icon {
+    position: absolute;
+    top: 50%;
+    left: 0.75rem;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  
+  .custom-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    transition: all 0.3s ease;
+  }
+  
+  .custom-input:focus {
+    outline: none;
+    border-color: var(--color-header-footer-logo-red, #8B0000);
+    box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
+  }
+  
+  .custom-input:hover {
+    transform: scale(1.02);
+  }
+  
+  /* Additional animation for the floating food icons */
+  @keyframes float-slow {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(5deg); }
+  }
+  
+  @keyframes float-medium {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(-5deg); }
+  }
+  
+  @keyframes float-fast {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(3deg); }
+  }
+  
+  .animate-float-slow {
+    animation: float-slow 8s ease-in-out infinite;
+  }
+  
+  .animate-float-medium {
+    animation: float-medium 6s ease-in-out infinite;
+  }
+  
+  .animate-float-fast {
+    animation: float-fast 4s ease-in-out infinite;
+  }
