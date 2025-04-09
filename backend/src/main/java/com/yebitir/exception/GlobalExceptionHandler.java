@@ -8,6 +8,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
+import org.hibernate.LazyInitializationException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -59,9 +60,25 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
     }
 
+    @ExceptionHandler(LazyInitializationException.class)
+    public ResponseEntity<MessageResponse> handleLazyInitializationException(LazyInitializationException ex,
+            WebRequest request) {
+        // Log the exception for debugging
+        System.err.println("LazyInitializationException: " + ex.getMessage());
+        ex.printStackTrace();
+
+        MessageResponse message = new MessageResponse(
+                "An error occurred while accessing related data. Please try again.");
+        return new ResponseEntity<>(message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<MessageResponse> handleGlobalException(Exception ex, WebRequest request) {
-        MessageResponse message = new MessageResponse("An unexpected error occurred");
+        // Log the full exception for server-side debugging
+        System.err.println("Unexpected error occurred: " + ex.getMessage());
+        ex.printStackTrace();
+
+        MessageResponse message = new MessageResponse("An unexpected error occurred: " + ex.getMessage());
         return new ResponseEntity<>(message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

@@ -1,6 +1,7 @@
 package com.yebitir.dto;
 
 import com.yebitir.model.Comment;
+import com.yebitir.model.UserCommentReaction;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,21 +16,29 @@ public class CommentDTO {
     private Long id;
     private Long authorId;
     private String author;
-    private String authorImage;
     private String text;
     private String time;
     private Integer likes;
     private Integer dislikes;
+    private Boolean userLiked = false;
+    private Boolean userDisliked = false;
 
     public CommentDTO(Comment comment) {
         this.id = comment.getId();
         this.authorId = comment.getAuthor().getId();
         this.author = comment.getAuthor().getUsername();
-        this.authorImage = comment.getAuthor().getProfileImage();
         this.text = comment.getText();
         this.time = formatTimeAgo(comment.getTime());
         this.likes = comment.getLikes();
         this.dislikes = comment.getDislikes();
+    }
+
+    public CommentDTO(Comment comment, UserCommentReaction userReaction) {
+        this(comment);
+        if (userReaction != null) {
+            this.userLiked = userReaction.getReactionType() == UserCommentReaction.ReactionType.LIKE;
+            this.userDisliked = userReaction.getReactionType() == UserCommentReaction.ReactionType.DISLIKE;
+        }
     }
 
     private String formatTimeAgo(LocalDateTime time) {

@@ -9,5 +9,4 @@ public class YebitirApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(YebitirApplication.class, args);
 	}
-
 }

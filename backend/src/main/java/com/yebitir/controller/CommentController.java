@@ -7,6 +7,9 @@ import com.yebitir.exception.UnauthorizedException;
 import com.yebitir.model.Comment;
 import com.yebitir.security.services.UserDetailsImpl;
 import com.yebitir.service.CommentService;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,7 +17,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/comments")
@@ -28,15 +30,21 @@ public class CommentController {
     }
 
     @GetMapping("/recipe/{recipeId}")
-    public ResponseEntity<?> getCommentsByRecipe(@PathVariable Long recipeId) {
+    public ResponseEntity<?> getCommentsByRecipe(
+            @PathVariable Long recipeId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
         try {
-            List<Comment> comments = commentService.getCommentsByRecipe(recipeId);
-            List<CommentDTO> commentDTOs = comments.stream()
-                    .map(CommentDTO::new)
-                    .collect(Collectors.toList());
-            return ResponseEntity.ok(commentDTOs);
+            Long userId = userDetails != null ? userDetails.getId() : null;
+            List<CommentDTO> commentDTOs = commentService.getCommentsByRecipeWithUserReactions(recipeId, userId);
+
+            return ResponseEntity.ok()
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .body(commentDTOs);
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(new MessageResponse("An error occurred while fetching comments: " + e.getMessage()));
         }
     }
 
@@ -44,13 +52,15 @@ public class CommentController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> addComment(
             @PathVariable Long recipeId,
-            @RequestParam String text,
+            @RequestBody CommentRequest text,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         try {
-            Comment comment = commentService.addComment(recipeId, userDetails.getId(), text);
+            Comment comment = commentService.addComment(recipeId, userDetails.getId(), text.getText());
             return ResponseEntity.ok(new CommentDTO(comment));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
         }
     }
 
@@ -86,9 +96,12 @@ public class CommentController {
     }
 
     @PostMapping("/{commentId}/like")
-    public ResponseEntity<?> likeComment(@PathVariable Long commentId) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> likeComment(
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
         try {
-            Comment comment = commentService.likeComment(commentId);
+            Comment comment = commentService.likeComment(commentId, userDetails.getId());
             return ResponseEntity.ok(new CommentDTO(comment));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -96,12 +109,22 @@ public class CommentController {
     }
 
     @PostMapping("/{commentId}/dislike")
-    public ResponseEntity<?> dislikeComment(@PathVariable Long commentId) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> dislikeComment(
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
         try {
-            Comment comment = commentService.dislikeComment(commentId);
+            Comment comment = commentService.dislikeComment(commentId, userDetails.getId());
             return ResponseEntity.ok(new CommentDTO(comment));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CommentRequest {
+        private String text;
     }
 }

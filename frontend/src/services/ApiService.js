@@ -358,38 +358,121 @@ export const filterRecipes = async (filterData) => {
 
 // Comment services
 export const getCommentsByRecipe = async (recipeId) => {
-  const response = await fetch(`${API_BASE_URL}/comments/recipe/${recipeId}`);
-  return handleResponse(response);
+  try {
+    console.log(`Fetching comments for recipe ${recipeId}`);
+    
+    // Get the token from localStorage
+    const token = localStorage.getItem('token');
+    
+    // Prepare headers
+    const headers = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    };
+    
+    // Add Authorization header if token exists
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/comments/recipe/${recipeId}`, {
+      headers
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to fetch comments:', response.status, response.statusText);
+      if (response.status === 500) {
+        // Try to get more error details from response body
+        try {
+          const errorData = await response.json();
+          console.error('Error details:', errorData);
+        } catch (jsonError) {
+          console.error('Could not parse error response:', jsonError);
+        }
+      }
+      return [];
+    }
+    
+    // Get the raw text response
+    const responseText = await response.text();
+    console.log('Raw response:', responseText.substring(0, 100) + '...');
+    
+    // Try to parse the JSON manually
+    try {
+      // Look for JSON structure in the response
+      const jsonMatch = responseText.match(/\[\s*\{.*\}\s*\]/s);
+      if (jsonMatch) {
+        const jsonData = JSON.parse(jsonMatch[0]);
+        console.log(`Successfully fetched ${jsonData.length} comments`);
+        return jsonData;
+      }
+      
+      // Try direct parsing if no match found
+      const jsonData = JSON.parse(responseText);
+      console.log(`Successfully fetched ${Array.isArray(jsonData) ? jsonData.length : 0} comments`);
+      return Array.isArray(jsonData) ? jsonData : [];
+    } catch (parseError) {
+      console.error('Error parsing comments response:', parseError);
+      return [];
+    }
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    return [];
+  }
 };
 
 export const addComment = async (recipeId, text, token) => {
-  const response = await fetch(`${API_BASE_URL}/comments/recipe/${recipeId}?text=${encodeURIComponent(text)}`, {
+  try {
+    const response = await fetch(`${API_BASE_URL}/comments/recipe/${recipeId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ text })
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    throw error;
+  }
+};
+
+export const likeComment = async (commentId, token) => {
+  const response = await fetch(`${API_BASE_URL}/comments/${commentId}/like`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
     }
   });
   return handleResponse(response);
 };
 
-export const likeComment = async (commentId) => {
-  const response = await fetch(`${API_BASE_URL}/comments/${commentId}/like`, {
-    method: 'POST'
-  });
-  return handleResponse(response);
-};
-
-export const dislikeComment = async (commentId) => {
+export const dislikeComment = async (commentId, token) => {
   const response = await fetch(`${API_BASE_URL}/comments/${commentId}/dislike`, {
-    method: 'POST'
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
   });
   return handleResponse(response);
 };
 
-export const deleteComment = async (commentId) => {
+export const deleteComment = async (commentId, token) => {
+  if (!token) {
+    throw new Error('No authentication token provided');
+  }
+
   const response = await fetch(`${API_BASE_URL}/comments/${commentId}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
   });
+
   return handleResponse(response);
 };
 
@@ -523,7 +606,9 @@ export const isRecipeSaved = async (recipeId, token) => {
     
     const result = await response.json();
     return result.isSaved || false;
-  } catch (_) {
+  // eslint-disable-next-line no-unused-vars
+  } catch (error) {
+    // Silently handle errors and return false
     return false;
   }
 };

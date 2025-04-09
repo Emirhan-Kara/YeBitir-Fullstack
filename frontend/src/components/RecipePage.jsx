@@ -76,14 +76,14 @@ const RecipePage = (props) => {
               profileImage: null,
               joinDate: new Date().toISOString()
             },
-            initialComments: Array.isArray(data.comments) ? data.comments : [],
+            initialComments: [], // Remove this since we'll fetch comments separately
             createdAt: data.createdAt || new Date().toISOString()
           };
           
           setRecipe(processedRecipe);
-          
         }
       } catch (err) {
+        console.error('Error fetching recipe:', err);
         setError(`Failed to load recipe: ${err.message}`);
       } finally {
         setLoading(false);
@@ -248,12 +248,8 @@ const RecipePage = (props) => {
       
       {/* Categories */}
       <div className="w-19/20 mx-auto flex flex-wrap justify-center rounded-2xl">
-        {recipe.categories && Object.entries(recipe.categories).map(([key, value]) => (
-          <CategoryButton 
-            key={key} 
-            label={key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')} 
-            value={value} 
-          />
+        {Object.entries(recipe.categories || {}).map(([label, value]) => (
+          <CategoryButton key={label} label={label} value={value} />
         ))}
       </div><br />
       
@@ -454,8 +450,7 @@ const RecipePage = (props) => {
       <SuggestionsSection text='Suggestions'/><br />
 
       {/* Comments Section */}
-      <CommentsSection 
-        initialComments={recipe.initialComments || []}
+      <CommentsSection
         recipeId={recipe.id}
       />
     </div> 
