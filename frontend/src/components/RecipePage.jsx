@@ -447,7 +447,7 @@ const RecipePage = (props) => {
       </div><br />
 
       {/* Suggestions Section*/}
-      <SuggestionsSection text='Suggestions'/><br />
+      <SuggestionsSection text='Suggestions' currentRecipeId={recipeId}/><br />
 
       {/* Comments Section */}
       <CommentsSection

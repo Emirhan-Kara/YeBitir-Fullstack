@@ -9,6 +9,7 @@ const CommentsSection = ({
   recipeId
 }) => {
   const [commentText, setCommentText] = useState('');
+  const [rating, setRating] = useState(0);
   const [allComments, setAllComments] = useState(initialComments);
   const [userReactions, setUserReactions] = useState({});  // Track user reactions {commentId: 'LIKE'|'DISLIKE'|null}
   const [openDropdownId, setOpenDropdownId] = useState(null);
@@ -24,19 +25,11 @@ const CommentsSection = ({
       try {
         setIsLoading(true);
         const comments = await getCommentsByRecipe(recipeId);
-        console.log('Raw comments from server:', comments);
         setAllComments(comments);
         
         // Initialize user reactions based on server data
         const initialReactions = {};
         comments.forEach(comment => {
-          console.log(`Raw comment data for ID ${comment.id}:`, {
-            userLiked: comment.userLiked,
-            userDisliked: comment.userDisliked,
-            likes: comment.likes,
-            dislikes: comment.dislikes
-          });
-          
           if (comment.userLiked === true) {
             initialReactions[comment.id] = 'LIKE';
           } else if (comment.userDisliked === true) {
@@ -44,7 +37,6 @@ const CommentsSection = ({
           } else {
             initialReactions[comment.id] = null;
           }
-          console.log(`Setting initial reaction for comment ${comment.id} to: ${initialReactions[comment.id]}`);
         });
         setUserReactions(initialReactions);
         
@@ -76,14 +68,29 @@ const CommentsSection = ({
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    if (!commentText.trim() || !isLoggedIn || !token) return;
+    if (!isLoggedIn || !token) {
+      setError('You must be logged in to add comments.');
+      return;
+    }
+    
+    if (!commentText.trim()) {
+      setError('Comment cannot be empty.');
+      return;
+    }
+
+    if (rating === 0) {
+      setError('Please select a rating.');
+      return;
+    }
     
     try {
-      const newComment = await addComment(recipeId, commentText, token);
+      const newComment = await addComment(recipeId, commentText, rating, token);
       setAllComments(prev => [newComment, ...prev]);
       setCommentText('');
+      setRating(0);
       setError(null);
-    } catch {
+    } catch (err) {
+      console.error('Error adding comment:', err);
       setError('Failed to add comment. Please try again.');
     }
   };
@@ -97,8 +104,6 @@ const CommentsSection = ({
       
       // Call API
       const updatedComment = await likeComment(commentId, token);
-      console.log('Like response:', updatedComment);
-      console.log('Previous state - was liked:', isCurrentlyLiked);
       
       // Toggle the like state based on previous state
       setUserReactions(prev => ({
@@ -148,8 +153,6 @@ const CommentsSection = ({
       
       // Call API
       const updatedComment = await dislikeComment(commentId, token);
-      console.log('Dislike response:', updatedComment);
-      console.log('Previous state - was disliked:', isCurrentlyDisliked);
       
       // Toggle the dislike state based on previous state
       setUserReactions(prev => ({
@@ -257,6 +260,32 @@ const CommentsSection = ({
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
             ></textarea>
+            
+            {/* Rating Input */}
+            <div className="mt-4 mb-4">
+              <label className="block text-sm font-medium mb-2">Rate this recipe:</label>
+              <div className="flex space-x-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      rating >= star ? 'bg-yellow-400' : 'bg-gray-300'
+                    }`}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="flex justify-end mt-2">
               <button 
                 type="submit" 
@@ -266,7 +295,7 @@ const CommentsSection = ({
                   color: '#ffffff',
                   transition: 'transform 0.1s ease'
                 }}
-                disabled={!commentText.trim()}
+                disabled={!commentText.trim() || rating === 0}
               >
                 Submit
               </button>
@@ -296,13 +325,6 @@ const CommentsSection = ({
         <div className="text-center py-4">Loading comments...</div>
       ) : allComments.length > 0 ? (
         allComments.map((comment) => {
-          console.log('Comment render debug:', {
-            isLoggedIn,
-            userId: currentUser?.id,
-            userRole: currentUser?.role,
-            commentAuthorId: comment.authorId,
-            shouldShowDropdown: isLoggedIn && (currentUser?.id === comment.authorId || currentUser?.role === 'ADMIN')
-          });
           return (
             <div key={comment.id || Math.random().toString()} className="mb-6">
               <div className="flex items-start mb-2">
@@ -312,6 +334,19 @@ const CommentsSection = ({
                       {comment.author || 'Anonymous'}
                     </Link>
                     <div className="flex items-center">
+                      {/* Rating Display */}
+                      <div className="flex items-center mr-4">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <svg
+                            key={star}
+                            className={`w-4 h-4 ${star <= comment.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                      </div>
                       <span className="text-sm text-gray-500 mr-2">
                         {comment.time}
                       </span>

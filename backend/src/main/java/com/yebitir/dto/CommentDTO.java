@@ -22,6 +22,7 @@ public class CommentDTO {
     private Integer dislikes;
     private Boolean userLiked = false;
     private Boolean userDisliked = false;
+    private Float rating;
 
     public CommentDTO(Comment comment) {
         this.id = comment.getId();
@@ -31,6 +32,7 @@ public class CommentDTO {
         this.time = formatTimeAgo(comment.getTime());
         this.likes = comment.getLikes();
         this.dislikes = comment.getDislikes();
+        this.rating = comment.getRating();
     }
 
     public CommentDTO(Comment comment, UserCommentReaction userReaction) {

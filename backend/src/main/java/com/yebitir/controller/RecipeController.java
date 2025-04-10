@@ -231,4 +231,16 @@ public class RecipeController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(recipeDTOs);
     }
+
+    @GetMapping("/random")
+    public ResponseEntity<List<RecipeDTO>> getRandomRecipes(
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) Long excludeId) {
+        System.out.println("Controller - Received excludeId: " + excludeId);
+        List<Recipe> recipes = recipeService.getRandomRecipes(limit, excludeId);
+        List<RecipeDTO> recipeDTOs = recipes.stream()
+                .map(RecipeDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(recipeDTOs);
+    }
 }

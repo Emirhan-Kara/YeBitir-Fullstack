@@ -1,9 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
 import RecipeCard from './RecipeCard';
 import { useTheme } from '../context/ThemeContext';
-import { getSuggestedRecipes } from '../services/ApiService';
+import { getRandomRecipes } from '../services/ApiService';
+import { useNavigate } from 'react-router-dom';
 
-const SuggestionsSection = ({text = ""}) => {
+const SuggestionsSection = ({ text = "", currentRecipeId }) => {
   const scrollContainerRef = useRef(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [maxScroll, setMaxScroll] = useState(0);
@@ -12,23 +13,59 @@ const SuggestionsSection = ({text = ""}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { theme } = useTheme();
+  const navigate = useNavigate();
   
   // Fetch suggested recipes from backend
   useEffect(() => {
     const fetchSuggestions = async () => {
       try {
-        const data = await getSuggestedRecipes();
+        setLoading(true);
+        // Convert currentRecipeId to number and ensure it's valid
+        const excludeId = currentRecipeId ? Number(currentRecipeId) : null;
+        
+        if (isNaN(excludeId)) {
+          console.error('Invalid recipe ID:', currentRecipeId);
+          setSuggestions([]);
+          setError('Invalid recipe ID');
+          return;
+        }
+        
+        const data = await getRandomRecipes(10, excludeId);
+        
+        if (!data || !Array.isArray(data)) {
+          console.log('Invalid data format received:', data);
+          setSuggestions([]);
+          setError('Invalid data format received from server');
+          return;
+        }
+        
+        if (data.length === 0) {
+          console.log('No recipes returned from server');
+          setSuggestions([]);
+          setError('No recipes available');
+          return;
+        }
+        
         setSuggestions(data);
+        setError(null);
       } catch (err) {
         console.error('Error fetching suggestions:', err);
         setError('Failed to load suggestions');
+        setSuggestions([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchSuggestions();
-  }, []);
+  }, [currentRecipeId]);
+
+  // Handle recipe click
+  const handleRecipeClick = (recipeId) => {
+    // Scroll to top before navigation
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate(`/recipe/${recipeId}`);
+  };
   
   // Calculate visible cards and track scroll position
   useEffect(() => {
@@ -138,8 +175,8 @@ const SuggestionsSection = ({text = ""}) => {
               ref={scrollContainerRef}
               className="flex overflow-x-auto py-4 px-12 space-x-4 no-scrollbar"
               style={{ 
-                scrollbarWidth: 'none', /* Firefox */
-                msOverflowStyle: 'none', /* IE and Edge */
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
                 scrollSnapType: 'x mandatory',
                 WebkitOverflowScrolling: 'touch'
               }}
@@ -159,8 +196,9 @@ const SuggestionsSection = ({text = ""}) => {
               {suggestions.map((suggestion) => (
                 <div 
                   key={suggestion.id} 
-                  className="flex-shrink-0 card-wrapper" 
+                  className="flex-shrink-0 card-wrapper cursor-pointer" 
                   style={{ scrollSnapAlign: 'start' }}
+                  onClick={() => handleRecipeClick(suggestion.id)}
                 >
                   <RecipeCard
                     title={suggestion.title}

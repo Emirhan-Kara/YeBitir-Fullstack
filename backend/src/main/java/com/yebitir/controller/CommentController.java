@@ -1,15 +1,13 @@
 package com.yebitir.controller;
 
 import com.yebitir.dto.CommentDTO;
+import com.yebitir.dto.CommentRequest;
 import com.yebitir.dto.MessageResponse;
 import com.yebitir.exception.ResourceNotFoundException;
 import com.yebitir.exception.UnauthorizedException;
 import com.yebitir.model.Comment;
 import com.yebitir.security.services.UserDetailsImpl;
 import com.yebitir.service.CommentService;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,10 +50,14 @@ public class CommentController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> addComment(
             @PathVariable Long recipeId,
-            @RequestBody CommentRequest text,
+            @RequestBody CommentRequest request,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         try {
-            Comment comment = commentService.addComment(recipeId, userDetails.getId(), text.getText());
+            if (request.getRating() == null || request.getRating() < 1 || request.getRating() > 5) {
+                return ResponseEntity.badRequest().body(new MessageResponse("Rating must be between 1 and 5"));
+            }
+            Comment comment = commentService.addComment(recipeId, userDetails.getId(), request.getText(),
+                    request.getRating());
             return ResponseEntity.ok(new CommentDTO(comment));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -119,12 +121,5 @@ public class CommentController {
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class CommentRequest {
-        private String text;
     }
 }

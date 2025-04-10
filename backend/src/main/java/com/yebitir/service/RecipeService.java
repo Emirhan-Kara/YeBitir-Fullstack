@@ -144,4 +144,16 @@ public class RecipeService {
                 .limit(6)
                 .collect(Collectors.toList());
     }
+
+    public List<Recipe> getRandomRecipes(int limit, Long excludeId) {
+        System.out.println("Service - Received excludeId: " + excludeId);
+        if (excludeId != null) {
+            System.out.println("Service - Calling findRandomRecipesExcluding with excludeId: " + excludeId);
+            // Execute debug query first
+            String debugInfo = recipeRepository.debugQuery(limit, excludeId);
+            System.out.println("Repository - " + debugInfo);
+            return recipeRepository.findRandomRecipesExcluding(limit, excludeId);
+        }
+        return recipeRepository.findRandomRecipes(limit);
+    }
 }

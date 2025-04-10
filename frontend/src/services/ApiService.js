@@ -91,11 +91,7 @@ export const register = async (name, email, password) => {
       mode: 'cors',
       body: JSON.stringify(requestBody)
     });
-
-    // Add debugging
-    console.log('Register response status:', response.status);
     
-    // Consider any 2xx response as success, even if the response body has issues
     if (response.ok) {
       try {
         const result = await handleResponse(response);
@@ -329,7 +325,6 @@ export const searchRecipes = async (query) => {
     }
     
     const queryString = params.toString();
-    console.log('Search query URL:', `${API_BASE_URL}/recipes/search?${queryString}`);
     const response = await fetch(`${API_BASE_URL}/recipes/search?${queryString}`);
     return handleResponse(response);
   } else {
@@ -359,8 +354,6 @@ export const filterRecipes = async (filterData) => {
 // Comment services
 export const getCommentsByRecipe = async (recipeId) => {
   try {
-    console.log(`Fetching comments for recipe ${recipeId}`);
-    
     // Get the token from localStorage
     const token = localStorage.getItem('token');
     
@@ -395,7 +388,6 @@ export const getCommentsByRecipe = async (recipeId) => {
     
     // Get the raw text response
     const responseText = await response.text();
-    console.log('Raw response:', responseText.substring(0, 100) + '...');
     
     // Try to parse the JSON manually
     try {
@@ -403,13 +395,11 @@ export const getCommentsByRecipe = async (recipeId) => {
       const jsonMatch = responseText.match(/\[\s*\{.*\}\s*\]/s);
       if (jsonMatch) {
         const jsonData = JSON.parse(jsonMatch[0]);
-        console.log(`Successfully fetched ${jsonData.length} comments`);
         return jsonData;
       }
       
       // Try direct parsing if no match found
       const jsonData = JSON.parse(responseText);
-      console.log(`Successfully fetched ${Array.isArray(jsonData) ? jsonData.length : 0} comments`);
       return Array.isArray(jsonData) ? jsonData : [];
     } catch (parseError) {
       console.error('Error parsing comments response:', parseError);
@@ -421,7 +411,7 @@ export const getCommentsByRecipe = async (recipeId) => {
   }
 };
 
-export const addComment = async (recipeId, text, token) => {
+export const addComment = async (recipeId, text, rating, token) => {
   try {
     const response = await fetch(`${API_BASE_URL}/comments/recipe/${recipeId}`, {
       method: 'POST',
@@ -429,7 +419,7 @@ export const addComment = async (recipeId, text, token) => {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ text })
+      body: JSON.stringify({ text, rating })
     });
     return handleResponse(response);
   } catch (error) {
@@ -725,4 +715,37 @@ export const updateProfilePicture = async (file, token) => {
     console.error('Profile picture upload error:', error);
     throw error;
   }
+};
+
+export const getRandomRecipes = async (limit = 10, excludeId = null) => {
+  const params = new URLSearchParams();
+  params.append('limit', limit);
+  if (excludeId) {
+    params.append('excludeId', excludeId);
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/recipes/random?${params}`);
+  const result = await handleResponse(response);
+  
+  // Handle different response formats
+  if (Array.isArray(result)) {
+    return result;
+  } else if (result && Array.isArray(result.data)) {
+    return result.data;
+  } else if (result && typeof result === 'object') {
+    // If it's a success wrapper object
+    const { success, ...data } = result;
+    if (Array.isArray(data)) {
+      return data;
+    }
+    // If it's an object with numeric keys
+    const recipeArray = Object.keys(data)
+      .filter(key => !isNaN(key))
+      .map(key => data[key]);
+    if (recipeArray.length > 0) {
+      return recipeArray;
+    }
+  }
+  
+  return [];
 };

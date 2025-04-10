@@ -34,4 +34,7 @@ public class Comment {
     private Integer likes = 0;
 
     private Integer dislikes = 0;
+
+    @Column(nullable = false)
+    private Float rating = 0.0f;
 }
