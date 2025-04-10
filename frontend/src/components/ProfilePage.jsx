@@ -7,14 +7,14 @@ import RecipeCard from './RecipeCard';
 import AnimatedFoodIcons from './AnimatedFoodIcons';
 import { 
   getUserProfile, 
-  getUserRecipes, 
+  getLoggedInUserRecipes,
   getSavedRecipes,
   updateUserProfile,
   updateUserPassword,
   deleteUserAccount,
-  updateProfilePicture
+  updateProfilePicture,
+  addDummyRecipes
 } from '../services/ApiService';
-import { addSampleRecipes } from '../scripts/addSampleRecipes';
 
 // Memoized AnimatedFoodIconsBackground component to prevent re-renders
 const AnimatedFoodIconsBackground = React.memo(({ count }) => {
@@ -125,9 +125,7 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
 
         // Fetch user's recipes
         try {
-          console.log('Fetching user recipes...');
-          const recipesData = await getUserRecipes(token);
-          console.log('User recipes response:', recipesData);
+          const recipesData = await getLoggedInUserRecipes(token);
           
           let processedRecipes = [];
           
@@ -161,7 +159,6 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
         // Fetch saved recipes
         try {
           const savedRecipesData = await getSavedRecipes(token);
-          console.log('Fetched saved recipes data:', savedRecipesData);
           
           let processedSavedRecipes = [];
           
@@ -192,7 +189,6 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
             servings: recipe.servings || 1
           }));
           
-          console.log('Processed saved recipes:', processedSavedRecipes);
           setSavedRecipes(processedSavedRecipes);
           setUserData(prev => ({
             ...prev,
@@ -482,6 +478,16 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
 
   const handleProfilePictureClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleAddSampleRecipes = async () => {
+    try {
+      await addDummyRecipes();
+      alert('Sample recipes added successfully!');
+    } catch (error) {
+      console.error('Error adding sample recipes:', error);
+      alert('Failed to add sample recipes: ' + error.message);
+    }
   };
 
   if (isLoading) {
@@ -1023,15 +1029,7 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
                   </h3>
                   <div className="space-y-4">
                     <button 
-                      onClick={async () => {
-                        try {
-                          await addSampleRecipes(token);
-                          showNotification('success', 'Sample recipes added successfully!');
-                        } catch (err) {
-                          console.error('Error adding sample recipes:', err);
-                          showNotification('error', 'Failed to add sample recipes');
-                        }
-                      }}
+                      onClick={handleAddSampleRecipes}
                       className="flex items-center transition-all duration-300 hover:translate-x-2 hover:font-medium p-2 rounded-md hover:bg-opacity-10 hover:bg-white"
                       style={{ color: theme.headerfooter.logoRed }}
                     >

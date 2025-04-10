@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import RecipeCard from './RecipeCard';
 import AnimatedFoodIcons from './AnimatedFoodIcons';
 import { getUserProfile, getUserRecipes } from '../services/ApiService';
+import { motion } from 'framer-motion';
 
 // Memoized AnimatedFoodIconsBackground component to prevent re-renders
 const AnimatedFoodIconsBackground = React.memo(({ count }) => {
@@ -23,29 +24,6 @@ const UserProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Animation variants for Framer Motion
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.8,
-        ease: "easeOut"
-      }
-    }
-  };
-
   // Fetch user profile and recipes from backend
   useEffect(() => {
     const fetchData = async () => {
@@ -53,14 +31,25 @@ const UserProfilePage = () => {
       setError(null);
       
       try {
-        // Fetch user profile
-        const profileData = await getUserProfile(username);
-        setUserProfile(profileData);
+        // Fetch user profile and recipes in parallel
+        const [profileData, recipesData] = await Promise.all([
+          getUserProfile(username),
+          getUserRecipes(username)
+        ]);
 
-        // Fetch user's recipes
-        const recipesData = await getUserRecipes(username);
+        console.log('Profile data:', profileData);
+        console.log('Recipes data:', recipesData);
+
+        // Check if profile data indicates an error
+        if (profileData.bio === "Failed to load user profile" || 
+            profileData.bio === "Error loading profile") {
+          setError("Failed to load user profile. Please try again later.");
+          setLoading(false);
+          return;
+        }
+
+        setUserProfile(profileData);
         setUserRecipes(recipesData);
-        
         setLoading(false);
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -71,60 +60,6 @@ const UserProfilePage = () => {
     
     fetchData();
   }, [username]);
-
-  // Function to render rating stars
-  const renderStars = (rating) => {
-    if (rating === "N/A") return "No ratings yet";
-    
-    const numRating = parseFloat(rating);
-    const fullStars = Math.floor(numRating);
-    const hasHalfStar = numRating % 1 >= 0.3 && numRating % 1 < 0.8;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-    
-    return (
-      <div className="flex items-center">
-        {/* Full stars */}
-        {[...Array(fullStars)].map((_, i) => (
-          <svg key={`full-${i}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" style={{color: theme.headerfooter.logoRed}}>
-            <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
-          </svg>
-        ))}
-        
-        {/* Half star */}
-        {hasHalfStar && (
-          <svg 
-            key="half"
-            xmlns="http://www.w3.org/2000/svg" 
-            viewBox="0 0 24 24" 
-            className="w-5 h-5"
-            style={{color: theme.headerfooter.logoRed}}
-          >
-            <defs>
-              <linearGradient id="halfStarGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="50%" stopColor="currentColor" />
-                <stop offset="50%" stopColor="transparent" />
-              </linearGradient>
-            </defs>
-            <path 
-              fill="url(#halfStarGradient)" 
-              stroke="currentColor"
-              strokeWidth="1"
-              d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z"
-            />
-          </svg>
-        )}
-        
-        {/* Empty stars */}
-        {[...Array(emptyStars)].map((_, i) => (
-          <svg key={`empty-${i}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="w-5 h-5" style={{color: theme.headerfooter.logoRed}}>
-            <path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" />
-          </svg>
-        ))}
-        
-        <span className="ml-2">{rating}</span>
-      </div>
-    );
-  };
 
   if (loading) {
     return (
@@ -187,7 +122,6 @@ const UserProfilePage = () => {
       {/* Decorative elements */}
       <div className="absolute inset-0 overflow-hidden z-0">
         <div className="absolute inset-0 bg-pattern opacity-5"></div>
-        {/* Background with animated food icons - Memoized to prevent re-renders */}
         <AnimatedFoodIconsBackground count={40} />
       </div>
 
@@ -200,99 +134,80 @@ const UserProfilePage = () => {
           className="rounded-lg shadow-md p-6 mb-6"
           style={{ backgroundColor: theme.core.container }}
         >
-          <div className="flex flex-col md:flex-row items-center">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 mb-4 md:mb-0 md:mr-6"
-            >
-              <img 
-                src={userProfile.profileImage} 
-                alt={userProfile.username} 
-                className="w-full h-full object-cover"
-              />
-            </motion.div>
-            <div className="flex-1 text-center md:text-left">
-              <motion.h1 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-                className="text-2xl font-bold mb-1"
-                style={{ color: theme.core.text }}
-              >
-                {userProfile.name}
-              </motion.h1>
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.35, duration: 0.5 }}
-                className="text-lg mb-2"
-                style={{ color: theme.headerfooter.logoRed }}
-              >
-                @{userProfile.username}
-              </motion.p>
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-                style={{ color: theme.core.text, opacity: 0.7 }}
-                className="mb-4"
-              >
-                {userProfile.bio}
-              </motion.p>
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.45, duration: 0.5 }}
-                style={{ color: theme.core.text, opacity: 0.7 }}
-                className="text-sm mb-4"
-              >
-                Member since {userProfile.joinDate}
-              </motion.p>
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.5 }}
-                className="flex flex-wrap justify-center md:justify-start items-center gap-6"
-              >
-                <div className="text-center">
-                  <p className="font-semibold" style={{ color: theme.core.text }}>{userProfile.recipesCount}</p>
-                  <p className="text-sm" style={{ color: theme.core.text, opacity: 0.7 }}>Recipes</p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center">
-                    <p className="font-semibold mr-2" style={{ color: theme.core.text }}>Avg. Rating:</p>
-                    {renderStars(userProfile.avgRating)}
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            {/* Left side - Profile pic and basic info */}
+            <div className="flex flex-col md:flex-row items-center mb-4 md:mb-0">
+              <div className="relative w-32 h-32 rounded-full overflow-hidden mb-4 md:mb-0 md:mr-6">
+                {userProfile?.profileImage ? (
+                  <img
+                    src={`data:image/jpeg;base64,${userProfile.profileImage}`}
+                    alt={`${username}'s profile`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                    </svg>
                   </div>
+                )}
+              </div>
+              <div className="text-center md:text-left">
+                <h1 className="text-3xl font-bold mb-2" style={{ color: theme.core.text }}>
+                  @{username}
+                </h1>
+                <p className="text-sm mb-2" style={{ color: theme.core.text, opacity: 0.7 }}>
+                  {userProfile?.bio || "No bio yet"}
+                </p>
+              </div>
+            </div>
+
+            {/* Right side - Stats and join date */}
+            <div className="flex flex-col items-center md:items-end">
+              <div className="flex gap-6 mb-3">
+                <div className="text-center">
+                  <p className="text-2xl font-bold" style={{ color: theme.core.text }}>
+                    {userRecipes.length}
+                  </p>
+                  <p className="text-sm" style={{ color: theme.core.text, opacity: 0.7 }}>
+                    Recipes
+                  </p>
                 </div>
-              </motion.div>
+              </div>
+              <p className="text-sm" style={{ color: theme.core.text, opacity: 0.7 }}>
+                Joined {userProfile?.joinDate ? new Date(userProfile.joinDate).toLocaleDateString('en-US', {
+                  month: 'long',
+                  year: 'numeric'
+                }) : 'Recently'}
+              </p>
             </div>
           </div>
         </motion.div>
 
         {/* User's Recipes Section */}
-        <div className="mb-10">
-          <motion.h2 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-2xl font-semibold mb-6 text-center"
-            style={{ color: theme.core.text }}
-          >
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          className="mb-8"
+        >
+          <h2 className="text-2xl font-bold mb-4" style={{ color: theme.core.text }}>
             {userProfile.username}'s Recipes
-          </motion.h2>
-          
-          {userRecipes.length > 0 ? (
-            <motion.div 
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-items-center"
-            >
-              {userRecipes.map(recipe => (
-                <motion.div key={recipe.id} variants={itemVariants}>
-                  <Link to={`/recipe/${recipe.id}`}>
+          </h2>
+          {userRecipes.length === 0 ? (
+            <div className="text-center py-8" style={{ color: theme.core.text, opacity: 0.7 }}>
+              <p>No recipes yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {userRecipes.map((recipe) => (
+                <motion.div
+                  key={recipe.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Link to={`/recipe/${recipe.id}`} className="block">
                     <RecipeCard 
                       title={recipe.title}
                       image={recipe.image}
@@ -303,58 +218,10 @@ const UserProfilePage = () => {
                   </Link>
                 </motion.div>
               ))}
-            </motion.div>
-          ) : (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-center p-8 rounded-lg"
-              style={{ backgroundColor: theme.core.container }}
-            >
-              <p className="mb-4">This user hasn't shared any recipes yet.</p>
-            </motion.div>
+            </div>
           )}
-        </div>
-        
-        {/* Activity Feed Section - Could be expanded in a real app */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="rounded-lg shadow-md p-6"
-          style={{ backgroundColor: theme.core.container }}
-        >
-          <h2 className="text-2xl font-semibold mb-4" style={{ color: theme.core.text }}>
-            Recent Activity
-          </h2>
-          
-          <div className="space-y-4">
-            {/* Sample activity items */}
-            <div className="p-3 rounded-lg" style={{ backgroundColor: theme.core.containerHoover }}>
-              <p>{userProfile.username} shared a new recipe: <span style={{ color: theme.headerfooter.logoRed }}>Turkish Delight</span></p>
-              <p className="text-sm opacity-70">2 days ago</p>
-            </div>
-            <div className="p-3 rounded-lg" style={{ backgroundColor: theme.core.containerHoover }}>
-              <p>{userProfile.username} updated their recipe: <span style={{ color: theme.headerfooter.logoRed }}>Vegetable Börek</span></p>
-              <p className="text-sm opacity-70">3 days ago</p>
-            </div>
-            <div className="p-3 rounded-lg" style={{ backgroundColor: theme.core.containerHoover }}>
-              <p>{userProfile.username} shared a new recipe: <span style={{ color: theme.headerfooter.logoRed }}>Turkish Rice Pudding</span></p>
-              <p className="text-sm opacity-70">4 days ago</p>
-            </div>
-          </div>
         </motion.div>
       </div>
-      
-      {/* Custom CSS for animations */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .bg-pattern {
-          background-image: radial-gradient(currentColor 1px, transparent 1px);
-          background-size: 40px 40px;
-        }
-      `}} />
     </div>
   );
 };

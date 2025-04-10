@@ -243,4 +243,22 @@ public class RecipeController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(recipeDTOs);
     }
+
+    @GetMapping("/user/{username}")
+    public ResponseEntity<List<RecipeDTO>> getRecipesByUsername(@PathVariable String username) {
+        try {
+            System.out.println("Fetching recipes for username: " + username);
+            List<Recipe> recipes = recipeService.getRecipesByUsername(username);
+            System.out.println("Found " + recipes.size() + " recipes");
+            recipes.forEach(recipe -> System.out.println("Recipe: " + recipe.getTitle() + " (ID: " + recipe.getId() + ")"));
+            
+            List<RecipeDTO> recipeDTOs = recipes.stream()
+                    .map(RecipeDTO::new)
+                    .collect(Collectors.toList());
+            System.out.println("Converted to " + recipeDTOs.size() + " DTOs");
+            return ResponseEntity.ok(recipeDTOs);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }
