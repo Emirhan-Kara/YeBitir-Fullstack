@@ -71,8 +71,8 @@ public class WebSecurityConfig {
                         .requestMatchers("/recipes/{id}").permitAll()
                         .requestMatchers("/recipes/search").permitAll()
                         .requestMatchers("/recipes/filter").permitAll()
-                        .requestMatchers("/recipes/user/{username}").permitAll()
                         .requestMatchers("/users/{username}").permitAll()
+                        .requestMatchers("/users/{username}/recipes").permitAll()
                         .requestMatchers("/comments/recipe/{recipeId}").permitAll()
                         .anyRequest().authenticated());
 

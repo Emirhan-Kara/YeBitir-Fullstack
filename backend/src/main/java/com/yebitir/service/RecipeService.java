@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -97,8 +96,21 @@ public class RecipeService {
         return recipeRepository.findByOwner(user);
     }
 
-    public List<Recipe> searchRecipes(String query) {
-        return recipeRepository.findByTitleContainingIgnoreCase(query);
+    public List<Recipe> searchRecipes(RecipeFilterDTO filterDTO) {
+        return recipeRepository.findByFilters(
+            filterDTO.getQuery(),
+            filterDTO.getMinRating(),
+            filterDTO.getMaxCookingTime(),
+            filterDTO.getCuisine(),
+            filterDTO.getMealType(),
+            filterDTO.getDiet(),
+            filterDTO.getMainIngredient(),
+            filterDTO.getServings()
+        );
+    }
+
+    public List<Recipe> searchRecipesByCookingTime(Integer maxCookingTime) {
+        return recipeRepository.findByTimeInMinsLessThanEqual(maxCookingTime);
     }
 
     public List<Recipe> filterRecipes(RecipeFilterDTO filterDTO) {
@@ -148,21 +160,13 @@ public class RecipeService {
 
     public List<Recipe> getRandomRecipes(int limit, Long excludeId) {
         System.out.println("Service - Received excludeId: " + excludeId);
-        List<Recipe> allRecipes = recipeRepository.findAll();
         if (excludeId != null) {
-            allRecipes = allRecipes.stream()
-                    .filter(recipe -> !recipe.getId().equals(excludeId))
-                    .collect(Collectors.toList());
+            System.out.println("Service - Calling findRandomRecipesExcluding with excludeId: " + excludeId);
+            // Execute debug query first
+            String debugInfo = recipeRepository.debugQuery(limit, excludeId);
+            System.out.println("Repository - " + debugInfo);
+            return recipeRepository.findRandomRecipesExcluding(limit, excludeId);
         }
-        Collections.shuffle(allRecipes);
-        return allRecipes.stream()
-                .limit(limit)
-                .collect(Collectors.toList());
-    }
-
-    public List<Recipe> getRecipesByUsername(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
-        return recipeRepository.findByOwner(user);
+        return recipeRepository.findRandomRecipes(limit);
     }
 }

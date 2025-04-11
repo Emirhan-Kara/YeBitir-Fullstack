@@ -23,6 +23,8 @@ public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
         List<Recipe> findByMainIngredient(String mainIngredient);
 
+        List<Recipe> findByTimeInMinsLessThanEqual(Integer maxCookingTime);
+
         @Query("SELECT r FROM Recipe r WHERE " +
                         "(:title IS NULL OR LOWER(r.title) LIKE LOWER(CONCAT('%', :title, '%'))) AND " +
                         "(:minRating IS NULL OR r.rating >= :minRating) AND " +

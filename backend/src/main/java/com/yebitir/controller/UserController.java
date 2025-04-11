@@ -3,6 +3,7 @@ package com.yebitir.controller;
 import com.yebitir.dto.MessageResponse;
 import com.yebitir.dto.RecipeDTO;
 import com.yebitir.dto.UserDTO;
+import com.yebitir.dto.PublicUserDTO;
 import com.yebitir.exception.EmailAlreadyExistsException;
 import com.yebitir.exception.InvalidCredentialsException;
 import com.yebitir.exception.ResourceNotFoundException;
@@ -43,10 +44,24 @@ public class UserController {
     }
 
     @GetMapping("/{username}")
-    public ResponseEntity<UserDTO> getUserByUsername(@PathVariable String username) {
+    public ResponseEntity<PublicUserDTO> getUserByUsername(@PathVariable String username) {
         try {
             User user = userService.getUserByUsername(username);
-            return ResponseEntity.ok(new UserDTO(user));
+            return ResponseEntity.ok(new PublicUserDTO(user));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/{username}/recipes")
+    public ResponseEntity<List<RecipeDTO>> getUserRecipesByUsername(@PathVariable String username) {
+        try {
+            User user = userService.getUserByUsername(username);
+            List<Recipe> recipes = user.getRecipes();
+            List<RecipeDTO> recipeDTOs = recipes.stream()
+                    .map(RecipeDTO::new)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(recipeDTOs);
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
