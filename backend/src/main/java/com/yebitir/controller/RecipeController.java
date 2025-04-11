@@ -25,8 +25,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -43,12 +45,23 @@ public class RecipeController {
     }
 
     @GetMapping
-    public ResponseEntity<List<RecipeDTO>> getAllRecipes() {
-        List<Recipe> recipes = recipeService.getAllRecipes();
-        List<RecipeDTO> recipeDTOs = recipes.stream()
-                .map(RecipeDTO::new)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(recipeDTOs);
+    public ResponseEntity<?> getRecipes(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) Float minRating,
+            @RequestParam(required = false) Integer maxCookingTime,
+            @RequestParam(required = false) String cuisine,
+            @RequestParam(required = false) String mealType,
+            @RequestParam(required = false) String diet,
+            @RequestParam(required = false) String mainIngredient,
+            @RequestParam(required = false) Integer servings) {
+        try {
+            List<Recipe> recipes = recipeService.getRecipes(query, minRating, maxCookingTime, cuisine, mealType, diet, mainIngredient, servings);
+            // Filter out inactive recipes
+            recipes = recipes.stream().filter(Recipe::getActive).collect(Collectors.toList());
+            return ResponseEntity.ok(recipes.stream().map(RecipeDTO::new).collect(Collectors.toList()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Failed to get recipes: " + e.getMessage()));
+        }
     }
 
     @GetMapping("/{id}")
@@ -242,5 +255,25 @@ public class RecipeController {
                 .map(RecipeDTO::new)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(recipeDTOs);
+    }
+
+    @GetMapping("/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> getRecipeStats() {
+        try {
+            List<Recipe> allRecipes = recipeService.getAllRecipes();
+            long total = allRecipes.size();
+            long published = allRecipes.stream().filter(Recipe::getActive).count();
+            long pending = total - published;
+            
+            Map<String, Long> stats = new HashMap<>();
+            stats.put("total", total);
+            stats.put("published", published);
+            stats.put("pending", pending);
+            
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Failed to get recipe statistics: " + e.getMessage()));
+        }
     }
 }

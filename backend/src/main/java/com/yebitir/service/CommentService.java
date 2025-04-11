@@ -270,4 +270,28 @@ public class CommentService {
 
                 return savedComment;
         }
+
+        public List<Comment> getAllComments() {
+                return commentRepository.findAll();
+        }
+
+        public void clearReportedComment(Long commentId) {
+                Comment comment = commentRepository.findById(commentId)
+                                .orElseThrow(() -> new RuntimeException("Comment not found"));
+                comment.setReported(false);
+                commentRepository.save(comment);
+        }
+
+        public void deleteComment(Long commentId) {
+                commentRepository.deleteById(commentId);
+        }
+
+        public Comment getCommentById(Long commentId) {
+                return commentRepository.findById(commentId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Comment not found with id: " + commentId));
+        }
+
+        public Comment saveComment(Comment comment) {
+                return commentRepository.save(comment);
+        }
 }

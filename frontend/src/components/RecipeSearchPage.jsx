@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import RecipeCard from './RecipeCard';
 import { motion } from 'framer-motion';
@@ -7,6 +7,7 @@ import { filterRecipes } from '../services/ApiService';
 
 const RecipeSearchPage = () => {
   const { theme } = useTheme();
+  const navigate = useNavigate();
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
@@ -58,6 +59,10 @@ const RecipeSearchPage = () => {
     }));
   };
 
+  const handleRecipeClick = (recipeId) => {
+    navigate(`/recipe/${recipeId}`);
+  };
+
   return (
     <div className="min-h-screen py-8 px-4" style={{ backgroundColor: theme.core.background }}>
       <div className="container mx-auto max-w-7xl">
@@ -99,7 +104,7 @@ const RecipeSearchPage = () => {
                 className="w-full p-2 rounded border"
                 style={{ backgroundColor: theme.core.background, color: theme.core.text }}
               >
-                <option value="">All Cuisines</option>
+                <option value="">Any</option>
                 {cuisineOptions.map(cuisine => (
                   <option key={cuisine} value={cuisine}>{cuisine}</option>
                 ))}
@@ -117,7 +122,7 @@ const RecipeSearchPage = () => {
                 className="w-full p-2 rounded border"
                 style={{ backgroundColor: theme.core.background, color: theme.core.text }}
               >
-                <option value="">All Meal Types</option>
+                <option value="">Any</option>
                 {mealTypeOptions.map(type => (
                   <option key={type} value={type}>{type}</option>
                 ))}
@@ -135,27 +140,11 @@ const RecipeSearchPage = () => {
                 className="w-full p-2 rounded border"
                 style={{ backgroundColor: theme.core.background, color: theme.core.text }}
               >
-                <option value="">All Diets</option>
+                <option value="">Any</option>
                 {dietOptions.map(diet => (
                   <option key={diet} value={diet}>{diet}</option>
                 ))}
               </select>
-            </div>
-
-            {/* Cooking Time */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium" style={{ color: theme.core.text }}>
-                Max Cooking Time (minutes)
-              </label>
-              <input
-                type="number"
-                value={filters.maxCookingTime}
-                onChange={(e) => handleFilterChange('maxCookingTime', e.target.value)}
-                className="w-full p-2 rounded border"
-                style={{ backgroundColor: theme.core.background, color: theme.core.text }}
-                placeholder="e.g., 30"
-                min="0"
-              />
             </div>
 
             {/* Minimum Rating */}
@@ -204,15 +193,14 @@ const RecipeSearchPage = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
                 >
-                  <Link to={`/recipe/${recipe.id}`} className="block">
-                    <RecipeCard 
-                      title={recipe.title}
-                      image={recipe.image}
-                      timeInMins={recipe.timeInMins}
-                      rating={recipe.rating}
-                      servings={recipe.servings}
-                    />
-                  </Link>
+                  <RecipeCard 
+                    title={recipe.title}
+                    image={recipe.image}
+                    timeInMins={recipe.timeInMins}
+                    rating={recipe.rating}
+                    servings={recipe.servings}
+                    onClick={() => handleRecipeClick(recipe.id)}
+                  />
                 </motion.div>
               ))}
             </motion.div>

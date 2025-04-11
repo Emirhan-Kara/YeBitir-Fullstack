@@ -37,4 +37,7 @@ public class Comment {
 
     @Column(nullable = false)
     private Float rating = 0.0f;
+
+    @Column(nullable = false)
+    private boolean reported = false;
 }

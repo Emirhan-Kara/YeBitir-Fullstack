@@ -29,6 +29,7 @@ public class RecipeDTO {
     private String mainIngredient;
     private Integer prepTime;
     private Integer cookTime;
+    private Boolean active;
     private List<String> ingredients;
     private List<String> instructions;
 
@@ -50,6 +51,7 @@ public class RecipeDTO {
         this.mainIngredient = recipe.getMainIngredient();
         this.prepTime = recipe.getPrepTime();
         this.cookTime = recipe.getCookTime();
+        this.active = recipe.getActive();
         this.ingredients = recipe.getIngredients();
         this.instructions = recipe.getInstructions();
     }

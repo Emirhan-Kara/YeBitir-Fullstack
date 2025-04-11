@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, UtensilsCrossed, Users, BarChart2, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, UtensilsCrossed, Users, BarChart2, Settings, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 const CollapsibleSidebar = () => {
@@ -33,65 +33,91 @@ const CollapsibleSidebar = () => {
 
   return (
     <aside 
-      className={`transition-all duration-300 ${collapsed ? "w-16" : "w-64"} h-screen fixed left-0 top-0 z-30`} 
-      style={{ backgroundColor: themeColors.secondary }}
+      className={`fixed left-0 top-0 z-30 h-screen transition-all duration-300 ease-in-out ${
+        collapsed ? "w-16" : "w-64"
+      }`}
+      style={{ 
+        backgroundColor: themeColors.secondary,
+        transitionProperty: 'width',
+      }}
       onMouseEnter={() => setCollapsed(false)}
       onMouseLeave={() => setCollapsed(true)}
     >
-      <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} p-4`}>
-        {!collapsed && (
+      <div className="flex h-16 items-center justify-between px-4">
+        <div className={`w-full overflow-hidden whitespace-nowrap transition-all duration-300 ${
+          collapsed ? "opacity-0 w-0" : "opacity-100 w-full"
+        }`}>
           <h2 className="text-2xl font-bold">
             <span className="text-white">Ye</span>
             <span style={{ color: themeColors.primary }}>Bitir</span>
           </h2>
-        )}
-        {/* Toggle button removed since we're using hover */}
+        </div>
       </div>
       <nav className="mt-6">
         <Link 
           to="/admin" 
-          className={`flex items-center ${collapsed ? "justify-center" : "px-6"} py-4 ${isActive('/admin') ? 'text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+          className={`flex h-14 items-center transition-all duration-200 ${
+            collapsed ? "justify-center px-0" : "px-6"
+          } ${isActive('/admin') ? 'text-white' : 'text-gray-300 hover:bg-gray-700'}`}
           style={isActive('/admin') ? { backgroundColor: themeColors.primary } : {}}
           title="Dashboard"
         >
-          <Home className={`w-5 h-5 ${collapsed ? "" : "mr-3"}`} />
-          {!collapsed && <span>Dashboard</span>}
+          <Home className={`min-w-5 h-5 ${collapsed ? "" : "mr-3"}`} />
+          <span className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${
+            collapsed ? "w-0 opacity-0" : "w-full opacity-100"
+          }`}>Dashboard</span>
         </Link>
         <Link 
           to="/admin/recipes" 
-          className={`flex items-center ${collapsed ? "justify-center" : "px-6"} py-4 ${isActive('/admin/recipes') ? 'text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+          className={`flex h-14 items-center transition-all duration-200 ${
+            collapsed ? "justify-center px-0" : "px-6"
+          } ${isActive('/admin/recipes') ? 'text-white' : 'text-gray-300 hover:bg-gray-700'}`}
           style={isActive('/admin/recipes') ? { backgroundColor: themeColors.primary } : {}}
-          title="Recipes Management"
+          title="Recipe Management"
         >
-          <UtensilsCrossed className={`w-5 h-5 ${collapsed ? "" : "mr-3"}`} />
-          {!collapsed && <span>Recipes Management</span>}
+          <UtensilsCrossed className={`min-w-5 h-5 ${collapsed ? "" : "mr-3"}`} />
+          <span className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${
+            collapsed ? "w-0 opacity-0" : "w-full opacity-100"
+          }`}>Recipe Management</span>
+        </Link>
+        <Link 
+          to="/admin/comments" 
+          className={`flex h-14 items-center transition-all duration-200 ${
+            collapsed ? "justify-center px-0" : "px-6"
+          } ${isActive('/admin/comments') ? 'text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+          style={isActive('/admin/comments') ? { backgroundColor: themeColors.primary } : {}}
+          title="Comment Management"
+        >
+          <MessageSquare className={`min-w-5 h-5 ${collapsed ? "" : "mr-3"}`} />
+          <span className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${
+            collapsed ? "w-0 opacity-0" : "w-full opacity-100"
+          }`}>Comment Management</span>
         </Link>
         <Link 
           to="/admin/users" 
-          className={`flex items-center ${collapsed ? "justify-center" : "px-6"} py-4 ${isActive('/admin/users') ? 'text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+          className={`flex h-14 items-center transition-all duration-200 ${
+            collapsed ? "justify-center px-0" : "px-6"
+          } ${isActive('/admin/users') ? 'text-white' : 'text-gray-300 hover:bg-gray-700'}`}
           style={isActive('/admin/users') ? { backgroundColor: themeColors.primary } : {}}
           title="User Management"
         >
-          <Users className={`w-5 h-5 ${collapsed ? "" : "mr-3"}`} />
-          {!collapsed && <span>User Management</span>}
-        </Link>
-        <Link 
-          to="/admin/analytics" 
-          className={`flex items-center ${collapsed ? "justify-center" : "px-6"} py-4 ${isActive('/admin/analytics') ? 'text-white' : 'text-gray-300 hover:bg-gray-700'}`}
-          style={isActive('/admin/analytics') ? { backgroundColor: themeColors.primary } : {}}
-          title="Analytics"
-        >
-          <BarChart2 className={`w-5 h-5 ${collapsed ? "" : "mr-3"}`} />
-          {!collapsed && <span>Analytics</span>}
+          <Users className={`min-w-5 h-5 ${collapsed ? "" : "mr-3"}`} />
+          <span className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${
+            collapsed ? "w-0 opacity-0" : "w-full opacity-100"
+          }`}>User Management</span>
         </Link>
         <Link 
           to="/admin/settings" 
-          className={`flex items-center ${collapsed ? "justify-center" : "px-6"} py-4 ${isActive('/admin/settings') ? 'text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+          className={`flex h-14 items-center transition-all duration-200 ${
+            collapsed ? "justify-center px-0" : "px-6"
+          } ${isActive('/admin/settings') ? 'text-white' : 'text-gray-300 hover:bg-gray-700'}`}
           style={isActive('/admin/settings') ? { backgroundColor: themeColors.primary } : {}}
           title="Settings"
         >
-          <Settings className={`w-5 h-5 ${collapsed ? "" : "mr-3"}`} />
-          {!collapsed && <span>Settings</span>}
+          <Settings className={`min-w-5 h-5 ${collapsed ? "" : "mr-3"}`} />
+          <span className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${
+            collapsed ? "w-0 opacity-0" : "w-full opacity-100"
+          }`}>Settings</span>
         </Link>
       </nav>
     </aside>

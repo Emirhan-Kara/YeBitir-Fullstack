@@ -122,4 +122,22 @@ public class CommentController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PutMapping("/{commentId}/report")
+    public ResponseEntity<?> reportComment(@PathVariable Long commentId) {
+        try {
+            Comment comment = commentService.getCommentById(commentId);
+            if (comment == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            comment.setReported(true);
+            commentService.saveComment(comment);
+            
+            return ResponseEntity.ok(new MessageResponse("Comment reported successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                .body(new MessageResponse("Failed to report comment: " + e.getMessage()));
+        }
+    }
 }

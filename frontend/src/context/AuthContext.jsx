@@ -75,8 +75,17 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await apiLogin(email, password);
       
-      // Backend returns { token, user } directly
-      const { token, user } = response;
+      // Check if response has the expected structure
+      if (!response || !response.data) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Extract user and token from response
+      const { data: { user, token } } = response;
+      
+      if (!user || !token) {
+        throw new Error('Missing user or token in response');
+      }
       
       // Set the current user and logged in state
       setCurrentUser(user);

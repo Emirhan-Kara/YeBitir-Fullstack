@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { addComment, likeComment, dislikeComment, deleteComment, getCommentsByRecipe } from '../services/ApiService';
+import { addComment, likeComment, dislikeComment, deleteComment, getCommentsByRecipe, reportComment } from '../services/ApiService';
 import { Link } from 'react-router-dom';
 
 const CommentsSection = ({ 
@@ -19,18 +19,6 @@ const CommentsSection = ({
   const { theme } = useTheme();
   const { isLoggedIn, currentUser, token } = useAuth();
 
-  // Debug logging for auth state
-  useEffect(() => {
-    console.log('Auth state in CommentsSection:', {
-      isLoggedIn,
-      currentUser: currentUser ? {
-        id: currentUser.id,
-        username: currentUser.username,
-        email: currentUser.email
-      } : null,
-      hasToken: !!token
-    });
-  }, [isLoggedIn, currentUser, token]);
 
   // Fetch comments when component mounts or auth state changes
   useEffect(() => {
@@ -218,7 +206,7 @@ const CommentsSection = ({
     }
     
     try {
-      await deleteComment(commentId, token);
+      await deleteComment(token, commentId);
       // Remove the deleted comment from the state
       setAllComments(prev => prev.filter(comment => comment.id !== commentId));
       setOpenDropdownId(null);
@@ -235,10 +223,22 @@ const CommentsSection = ({
     }
   };
 
-  const handleReportComment = (commentId) => {
-    // In the future, implement actual reporting functionality
-    alert(`Comment ${commentId} has been reported.`);
-    setOpenDropdownId(null);
+  const handleReportComment = async (commentId) => {
+    if (!isLoggedIn || !token) {
+      setError('You must be logged in to report comments.');
+      return;
+    }
+    
+    try {
+      await reportComment(commentId, token);
+      setOpenDropdownId(null);
+      setError(null);
+      // Show success message
+      alert('Comment has been reported successfully.');
+    } catch (err) {
+      console.error('Error reporting comment:', err);
+      setError('Failed to report comment. Please try again.');
+    }
   };
   
   return (

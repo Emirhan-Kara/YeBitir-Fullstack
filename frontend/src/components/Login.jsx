@@ -255,10 +255,15 @@ const Login = () => {
       const result = await login(email, password);
       
       if (result.success) {
-        // Get the saved redirect path or default to home
-        const redirectPath = localStorage.getItem('redirectPath') || '/';
-        localStorage.removeItem('redirectPath'); // Clear the saved path
-        navigate(redirectPath);
+        // Check if user is admin
+        if (result.user?.role === 'ADMIN') {
+          navigate('/admin');
+        } else {
+          // Get the saved redirect path or default to home
+          const redirectPath = localStorage.getItem('redirectPath') || '/';
+          localStorage.removeItem('redirectPath'); // Clear the saved path
+          navigate(redirectPath);
+        }
       } else {
         setError(result.message || 'Login failed. Please try again.');
       }

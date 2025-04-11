@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,6 +52,7 @@ public class RecipeService {
         recipe.setOwner(owner);
         recipe.setDateCreated(LocalDateTime.now());
         recipe.setRating(0.0f);
+        recipe.setActive(false);
 
         return recipeRepository.save(recipe);
     }
@@ -87,6 +89,10 @@ public class RecipeService {
 
     public List<Recipe> getAllRecipes() {
         return recipeRepository.findAll();
+    }
+
+    public Recipe saveRecipe(Recipe recipe) {
+        return recipeRepository.save(recipe);
     }
 
     public List<Recipe> getRecipesByOwner(Long userId) {
@@ -129,11 +135,17 @@ public class RecipeService {
         Recipe recipe = recipeRepository.findById(recipeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Recipe not found with id: " + recipeId));
 
+        // Admin can delete any recipe
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
-        // Only the owner or an admin can delete a recipe
-        if (!recipe.getOwner().getId().equals(userId) && user.getRole() != Role.ADMIN) {
+        if (user.getRole() == Role.ADMIN) {
+            recipeRepository.delete(recipe);
+            return;
+        }
+
+        // For non-admin users, check if they own the recipe
+        if (!recipe.getOwner().getId().equals(userId)) {
             throw new UnauthorizedException("You don't have permission to delete this recipe");
         }
 
@@ -168,5 +180,53 @@ public class RecipeService {
             return recipeRepository.findRandomRecipesExcluding(limit, excludeId);
         }
         return recipeRepository.findRandomRecipes(limit);
+    }
+
+    public List<Recipe> getRecipes(String query, Float minRating, Integer maxCookingTime, String cuisine, String mealType, String diet, String mainIngredient, Integer servings) {
+        List<Recipe> recipes = new ArrayList<>();
+        
+        if (query != null && !query.isEmpty()) {
+            recipes.addAll(recipeRepository.findByTitleContainingIgnoreCase(query));
+        }
+        
+        if (cuisine != null && !cuisine.isEmpty()) {
+            recipes.addAll(recipeRepository.findByCuisine(cuisine));
+        }
+        
+        if (mealType != null && !mealType.isEmpty()) {
+            recipes.addAll(recipeRepository.findByMealType(mealType));
+        }
+        
+        if (diet != null && !diet.isEmpty()) {
+            recipes.addAll(recipeRepository.findByDiet(diet));
+        }
+        
+        if (mainIngredient != null && !mainIngredient.isEmpty()) {
+            recipes.addAll(recipeRepository.findByMainIngredient(mainIngredient));
+        }
+        
+        if (maxCookingTime != null) {
+            recipes.addAll(recipeRepository.findByTimeInMinsLessThanEqual(maxCookingTime));
+        }
+        
+        // If no filters are applied, get all recipes
+        if (recipes.isEmpty()) {
+            recipes = recipeRepository.findAll();
+        }
+        
+        // Apply additional filters
+        if (minRating != null) {
+            recipes = recipes.stream()
+                    .filter(recipe -> recipe.getRating() >= minRating)
+                    .collect(Collectors.toList());
+        }
+        
+        if (servings != null) {
+            recipes = recipes.stream()
+                    .filter(recipe -> recipe.getServings() >= servings)
+                    .collect(Collectors.toList());
+        }
+        
+        return recipes;
     }
 }

@@ -14,7 +14,6 @@ import {
   deleteUserAccount,
   updateProfilePicture
 } from '../services/ApiService';
-import { addSampleRecipes } from '../scripts/addSampleRecipes';
 
 // Memoized AnimatedFoodIconsBackground component to prevent re-renders
 const AnimatedFoodIconsBackground = React.memo(({ count }) => {
@@ -125,9 +124,7 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
 
         // Now that we have the username, fetch recipes
         if (profileData.username) {
-          console.log('Fetching user recipes...');
           const recipesData = await getUserRecipes(profileData.username);
-          console.log('User recipes response:', recipesData);
           
           let processedRecipes = [];
           
@@ -152,7 +149,6 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
         // Fetch saved recipes
         try {
           const savedRecipesData = await getSavedRecipes(token);
-          console.log('Fetched saved recipes data:', savedRecipesData);
           
           let processedSavedRecipes = [];
           
@@ -183,7 +179,6 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
             servings: recipe.servings || 1
           }));
           
-          console.log('Processed saved recipes:', processedSavedRecipes);
           setSavedRecipes(processedSavedRecipes);
           setUserData(prev => ({
             ...prev,
@@ -1013,24 +1008,6 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
                     Account Actions
                   </h3>
                   <div className="space-y-4">
-                    <button 
-                      onClick={async () => {
-                        try {
-                          await addSampleRecipes(token);
-                          showNotification('success', 'Sample recipes added successfully!');
-                        } catch (err) {
-                          console.error('Error adding sample recipes:', err);
-                          showNotification('error', 'Failed to add sample recipes');
-                        }
-                      }}
-                      className="flex items-center transition-all duration-300 hover:translate-x-2 hover:font-medium p-2 rounded-md hover:bg-opacity-10 hover:bg-white"
-                      style={{ color: theme.headerfooter.logoRed }}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5 mr-2">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      Add Sample Recipes
-                    </button>
                     <button 
                       onClick={handleDeleteAccount}
                       disabled={isUpdating}

@@ -10,7 +10,7 @@ import Home from "./components/Home"
 import AdminDashboard from "./components/AdminDashboard"
 import UserManagement from './components/UserManagement';
 import RecipeManagement from './components/RecipeManagement';
-import AdminAnalytics from "./components/AdminAnalytics"
+import CommentManagement from './components/CommentManagement';
 import AdminSettings from "./components/AdminSettings"
 import Login from "./components/Login";
 import SignUp from "./components/SignUp";
@@ -24,8 +24,47 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import KVKKCompliance from "./components/KVKKCompliance";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import { NotificationProvider } from './context/NotificationContext';
+import CollapsibleSidebar from './components/CollapsibleSidebar';
 
-// Layout component that conditionally renders Header based on current path
+// Admin Layout component
+const AdminLayout = () => {
+  return (
+    <div className="flex h-screen bg-gray-100">
+      <CollapsibleSidebar />
+      <div className="flex-1 overflow-auto">
+        <Routes>
+          <Route path="/" element={
+            <ProtectedRoute adminOnly>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/users" element={
+            <ProtectedRoute adminOnly>
+              <UserManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/recipes" element={
+            <ProtectedRoute adminOnly>
+              <RecipeManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/comments" element={
+            <ProtectedRoute adminOnly>
+              <CommentManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute adminOnly>
+              <AdminSettings />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </div>
+    </div>
+  );
+};
+
+// Main Layout component for regular pages
 const MainLayout = () => {
   const location = useLocation();
   const isHomepage = location.pathname === '/';
@@ -53,33 +92,6 @@ const MainLayout = () => {
           <Route path="/profile/:username" element={<UserProfilePage />} />
           <Route path="/kvkk" element={<KVKKCompliance />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={
-            <ProtectedRoute adminOnly>
-              <AdminDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/users" element={
-            <ProtectedRoute adminOnly>
-              <UserManagement />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/recipes" element={
-            <ProtectedRoute adminOnly>
-              <RecipeManagement />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/analytics" element={
-            <ProtectedRoute adminOnly>
-              <AdminAnalytics />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/settings" element={
-            <ProtectedRoute adminOnly>
-              <AdminSettings />
-            </ProtectedRoute>
-          } />
         </Routes>
       </main>
       <Footer />
@@ -98,6 +110,9 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<SignUp />} />
               
+              {/* Admin routes without Header/Footer */}
+              <Route path="/admin/*" element={<AdminLayout />} />
+              
               {/* All other routes with standard layout */}
               <Route path="*" element={<MainLayout />} />
             </Routes>
@@ -108,4 +123,4 @@ function App() {
   );
 }
 
-export default App
+export default App;

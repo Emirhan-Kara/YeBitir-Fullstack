@@ -6,7 +6,8 @@ const RecipeCard = ({
     image,
     timeInMins = 0,
     rating = 0,
-    servings = 1
+    servings = 1,
+    onClick
 }) => {
   const { theme } = useTheme();
   const [imageError, setImageError] = useState(false);
@@ -16,6 +17,7 @@ const RecipeCard = ({
 
   return (
     <div 
+      onClick={onClick}
       className="w-72 m-2 rounded-xl overflow-hidden shadow-md transition-transform duration-300 hover:shadow-lg hover:scale-105 cursor-pointer"
       style={{ backgroundColor: theme.recipecard.background }}
     >

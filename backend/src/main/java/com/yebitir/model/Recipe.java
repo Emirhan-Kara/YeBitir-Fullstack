@@ -68,6 +68,9 @@ public class Recipe {
     @Column(name = "cook_time")
     private Integer cookTime;
 
+    @Column(name = "is_active", nullable = false)
+    private Boolean active = false;
+
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "recipe_ingredients", joinColumns = @JoinColumn(name = "recipe_id"))
     @Column(name = "ingredient", columnDefinition = "TEXT")

@@ -60,17 +60,35 @@ const handleResponse = async (response) => {
 
 // Authentication services
 export const login = async (email, password) => {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    credentials: 'include',
-    mode: 'cors',
-    body: JSON.stringify({ email, password })
-  });
-  return handleResponse(response);
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include',
+      mode: 'cors',
+      body: JSON.stringify({ email, password })
+    });
+
+    const result = await handleResponse(response);
+    
+    // Ensure the response has the expected structure
+    if (!result.data) {
+      return {
+        data: {
+          user: result.user || result,
+          token: result.token
+        }
+      };
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('Login API error:', error);
+    throw error;
+  }
 };
 
 export const register = async (name, email, password) => {
@@ -488,7 +506,7 @@ export const dislikeComment = async (commentId, token) => {
   return handleResponse(response);
 };
 
-export const deleteComment = async (commentId, token) => {
+export const deleteOwnComment = async (token, commentId) => {
   if (!token) {
     throw new Error('No authentication token provided');
   }
@@ -502,6 +520,30 @@ export const deleteComment = async (commentId, token) => {
   });
 
   return handleResponse(response);
+};
+
+export const deleteComment = async (token, commentId) => {
+  if (!token) {
+    throw new Error('No authentication token provided');
+  }
+
+  // Get the current user's role from the token
+  const tokenData = JSON.parse(atob(token.split('.')[1]));
+  const isAdmin = tokenData.role === 'ADMIN';
+
+  // Use the appropriate function based on user role
+  if (isAdmin) {
+    const response = await fetch(`${API_BASE_URL}/admin/comments/${commentId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return handleResponse(response);
+  } else {
+    return deleteOwnComment(token, commentId);
+  }
 };
 
 // User services
@@ -783,4 +825,298 @@ export const getRandomRecipes = async (limit = 10, excludeId = null) => {
   }
   
   return [];
+};
+
+export const getRecipeStats = async (token) => {
+  const response = await fetch(`${API_BASE_URL}/admin/recipes/stats`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  return handleResponse(response);
+};
+
+export const updateRecipeStatus = async (recipeId, isActive, token) => {
+  const response = await fetch(`${API_BASE_URL}/admin/recipes/${recipeId}/status`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ active: isActive })
+  });
+  return handleResponse(response);
+};
+
+export const deleteRecipeAdmin = async (recipeId, token) => {
+  const response = await fetch(`${API_BASE_URL}/admin/recipes/${recipeId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include'
+  });
+  return handleResponse(response);
+};
+
+// Admin-specific recipe services
+export const getAdminRecipes = async (token) => {
+  const response = await fetch(`${API_BASE_URL}/admin/recipes`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  const result = await handleResponse(response);
+  
+  // Handle different response formats
+  if (Array.isArray(result)) {
+    return result;
+  } else if (result && typeof result === 'object') {
+    if (result.data && Array.isArray(result.data)) {
+      return result.data;
+    } else if (result.recipes && Array.isArray(result.recipes)) {
+      return result.recipes;
+    } else {
+      // Convert object with numeric keys to array if needed
+      const recipeArray = Object.keys(result)
+        .filter(key => !isNaN(key))
+        .map(key => result[key]);
+      if (recipeArray.length > 0) {
+        return recipeArray;
+      }
+    }
+  }
+  
+  console.warn('Unexpected admin recipes response format:', result);
+  return [];
+};
+
+export const deleteUserAdmin = async (userId, token) => {
+  const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include'
+  });
+  return handleResponse(response);
+};
+
+// Admin User Management
+export const getAdminUsers = async (token) => {
+  try {
+    
+    const response = await fetch(`${API_BASE_URL}/admin/users`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include'
+    });
+    
+    const responseText = await response.text();
+    
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error('Failed to parse server response: ' + responseText);
+    }
+
+    // Handle different response formats
+    let users = [];
+    if (Array.isArray(result)) {
+      users = result;
+    } else if (result && Array.isArray(result.data)) {
+      users = result.data;
+    } else if (result && typeof result === 'object') {
+      // Try to extract users from object if needed
+      const possibleUsers = Object.values(result).find(val => Array.isArray(val));
+      if (possibleUsers) {
+        users = possibleUsers;
+      }
+    }
+
+
+    // Transform and validate each user object
+    const transformedUsers = users.map(user => {
+      const transformed = {
+        id: user.id || 0,
+        username: user.username || '',
+        email: user.email || '',
+        dateCreated: user.joinDate || user.join_date || null,
+        lastActive: user.lastLogin || user.last_login || null,
+        removed: user.active === false || user.active === 0,
+        role: user.role || 'USER'
+      };
+      return transformed;
+    });
+
+    return transformedUsers;
+  } catch (error) {
+    console.error('Error in getAdminUsers:', error);
+    throw error;
+  }
+};
+
+export const getUserStats = async (token) => {
+  const response = await fetch(`${API_BASE_URL}/admin/users/stats`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include'
+  });
+  return handleResponse(response);
+};
+
+export const updateUserStatus = async (userId, isActive, token) => {
+  const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/status`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ active: isActive }),
+    credentials: 'include'
+  });
+  return handleResponse(response);
+};
+
+export const searchUsersAdmin = async (query, token) => {
+  const response = await fetch(`${API_BASE_URL}/admin/users/search?query=${encodeURIComponent(query)}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include'
+  });
+  return handleResponse(response);
+};
+
+export const filterUsersAdmin = async (filters, token) => {
+  const response = await fetch(`${API_BASE_URL}/admin/users/filter`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(filters),
+    credentials: 'include'
+  });
+  return handleResponse(response);
+};
+
+export const getAdminStats = async (token) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/stats`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch admin statistics');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw new Error(error.message || 'Failed to fetch admin statistics');
+  }
+};
+
+// Function to report a comment
+export const reportComment = async (commentId, token) => {
+  if (!token) {
+    throw new Error('No authentication token provided');
+  }
+
+  try {
+    console.log('Reporting comment:', commentId);
+    const response = await fetch(`${API_BASE_URL}/comments/${commentId}/report`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Failed to report comment: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error reporting comment:', error);
+    throw error;
+  }
+};
+
+// Function to get all comments for admin
+export const getAllComments = async (token) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/comments`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Frontend: Error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Frontend: Successfully received comments:', data.length);
+    return data;
+  } catch (error) {
+    console.error('Frontend: Error in getAllComments:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    throw error;
+  }
+};
+
+// Function to clear a reported comment
+export const clearReportedComment = async (token, commentId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/comments/${commentId}/clear-report`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error clearing reported comment:', error);
+    throw new Error(error.message || 'Failed to clear reported comment');
+  }
 };

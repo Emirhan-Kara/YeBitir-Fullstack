@@ -21,7 +21,6 @@ import RecipeCard from './RecipeCard';
 import AdminDashboard from './AdminDashboard';
 import UserManagement from './UserManagement';
 import RecipeManagement from './RecipeManagement';
-import AdminAnalytics from './AdminAnalytics';
 import AdminSettings from './AdminSettings';
 import ScrollToTop from './ScrollToTop';
 import { getAllRecipes, getRecipeById } from '../services/ApiService';
@@ -204,7 +203,6 @@ const AppRoutes = () => {
       } />
       <Route path="/admin/users" element={<UserManagement />} />
       <Route path="/admin/recipes" element={<RecipeManagement />} />
-      <Route path="/admin/analytics" element={<AdminAnalytics />} />
       <Route path="/admin/settings" element={<AdminSettings />} />
      
       {/* All other routes with standard layout */}

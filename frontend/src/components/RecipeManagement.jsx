@@ -1,136 +1,129 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, Edit, Trash2, Check, X, Search, Filter } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import AdminLayout from './AdminLayout';
+import { getRecipeStats, updateRecipeStatus, deleteRecipeAdmin, getAdminRecipes } from '../services/ApiService';
 
 const RecipeManagement = () => {
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const { token, user } = useAuth();
+  const { dispatch } = useNotification();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
-  
-  // Mock data for recipes
-  const [recipes, setRecipes] = useState([
-    { 
-      id: 1, 
-      title: 'Homemade Turkish Lahmacun', 
-      author: 'Emirhan', 
-      category: 'Main Course',
-      status: 'published', 
-      date: '2025-03-04', 
-      views: 142,
-      likes: 37,
-      featured: true
-    },
-    { 
-      id: 2, 
-      title: 'Authentic Adana Kebab', 
-      author: 'Hayrunnisa', 
-      category: 'Main Course',
-      status: 'published', 
-      date: '2025-03-03', 
-      views: 89,
-      likes: 22,
-      featured: false
-    },
-    { 
-      id: 3, 
-      title: 'Classic Turkish Baklava', 
-      author: 'Rumeysa', 
-      category: 'Desserts',
-      status: 'pending', 
-      date: '2025-03-05', 
-      views: 0,
-      likes: 0,
-      featured: false
-    },
-    { 
-      id: 4, 
-      title: 'Spicy Chicken Köfte', 
-      author: 'Zaid', 
-      category: 'Main Course',
-      status: 'published', 
-      date: '2025-03-02', 
-      views: 215,
-      likes: 54,
-      featured: true
-    },
-    { 
-      id: 5, 
-      title: 'Quick Breakfast Menemen', 
-      author: 'CookingMaster', 
-      category: 'Breakfast',
-      status: 'pending', 
-      date: '2025-03-05', 
-      views: 0,
-      likes: 0,
-      featured: false
-    },
-    { 
-      id: 6, 
-      title: 'Creamy Mushroom Soup', 
-      author: 'ZeynepKaya', 
-      category: 'Soups',
-      status: 'published', 
-      date: '2025-03-05', 
-      views: 56,
-      likes: 14,
-      featured: false
-    },
-    { 
-      id: 7, 
-      title: 'Easy Turkish Rice Pudding', 
-      author: 'AhmetYilmaz', 
-      category: 'Desserts',
-      status: 'published', 
-      date: '2025-03-01', 
-      views: 122,
-      likes: 41,
-      featured: false
-    },
-    { 
-      id: 8, 
-      title: 'Mediterranean Chickpea Salad', 
-      author: 'MerveDeniz', 
-      category: 'Salads',
-      status: 'published', 
-      date: '2025-03-04', 
-      views: 78,
-      likes: 19,
-      featured: false
-    },
-    { 
-      id: 9, 
-      title: 'Traditional Turkish Coffee', 
-      author: 'EmreAksoy', 
-      category: 'Beverages',
-      status: 'pending', 
-      date: '2025-03-06', 
-      views: 0,
-      likes: 0,
-      featured: false
-    }
-  ]);
+  const [stats, setStats] = useState({
+    total: 0,
+    published: 0,
+    pending: 0
+  });
+  const [recipes, setRecipes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Categories for filtering
-  const categories = [
-    'All Categories',
-    'Main Course',
-    'Desserts',
-    'Breakfast',
-    'Appetizers',
-    'Soups',
-    'Salads',
-    'Beverages'
-  ];
+  // Check if user is admin
+  useEffect(() => {
+    const checkAuth = () => {
+      if (!token) {
+        navigate('/login', { state: { from: '/admin/recipes' } });
+        return;
+      }
+
+      if (!user) {
+        return; // Wait for user data to load
+      }
+
+      const role = user.role?.toLowerCase();
+      if (role !== 'admin') {
+        dispatch({
+          type: 'error',
+          message: 'Unauthorized access. Admin privileges required.',
+          duration: 3000
+        });
+        navigate('/login');
+      }
+    };
+
+    checkAuth();
+  }, [user, token, navigate, dispatch]);
+
+  // Fetch data function
+  const fetchData = async () => {
+    if (!token || !user?.role?.toLowerCase() === 'admin') return;
+
+    try {
+      const statsData = await getRecipeStats(token);
+      setStats(statsData);
+      
+      const recipesData = await getAdminRecipes(token);
+      setRecipes(recipesData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      if (error.message?.includes('401') || error.message?.includes('403')) {
+        dispatch({
+          type: 'error',
+          message: 'Session expired. Please login again.',
+          duration: 3000
+        });
+        navigate('/login');
+        return;
+      }
+      dispatch({
+        type: 'error',
+        message: 'Failed to load recipe data',
+        duration: 3000
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [token, user, dispatch, navigate]);
+
+  // Handle status change
+  const handleStatusChange = async (recipeId, newStatus) => {
+    try {
+      await updateRecipeStatus(recipeId, newStatus === 'active', token);
+      dispatch({
+        type: 'success',
+        message: `Recipe ${newStatus === 'active' ? 'published' : 'unpublished'} successfully`,
+        duration: 3000
+      });
+      // Refresh data after status change
+      fetchData();
+    } catch (error) {
+      dispatch({
+        type: 'error',
+        message: 'Failed to update recipe status',
+        duration: 3000
+      });
+    }
+  };
+
+  // Filter and search recipes
+  const filteredRecipes = Array.isArray(recipes) ? recipes.filter(recipe => {
+    const matchesSearch = 
+      recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      recipe.owner?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      recipe.mealType?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = 
+      filterStatus === 'all' || 
+      (filterStatus === 'active' && recipe.active) || 
+      (filterStatus === 'inactive' && !recipe.active);
+
+    return matchesSearch && matchesStatus;
+  }) : [];
 
   // Default theme values in case theme is not properly loaded
   const isDark = theme?.name === 'dark';
   
   const themeColors = {
-    primary: isDark ? '#e53e3e' : '#e53e3e', // Keep the same red for both themes
+    primary: isDark ? '#e53e3e' : '#e53e3e',
     secondary: isDark ? '#2d3748' : '#4a5568',
     background: isDark ? '#1a202c' : '#f7fafc',
     text: {
@@ -145,71 +138,28 @@ const RecipeManagement = () => {
     }
   };
 
-  // Filter recipes based on search, status filter, and category filter
-  const filteredRecipes = recipes.filter(recipe => {
-    const matchesSearch = recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          recipe.author.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatusFilter = filterStatus === 'all' || recipe.status === filterStatus;
-    const matchesCategoryFilter = filterCategory === 'all' || 
-                                  recipe.category.toLowerCase() === filterCategory.toLowerCase();
-    
-    return matchesSearch && matchesStatusFilter && matchesCategoryFilter;
-  });
-
-  // View recipe details - Navigate to recipe page
-  const viewRecipe = (recipeId) => {
-    // In a real application, this would navigate to the recipe detail page
-    navigate(`/recipe/${recipeId}`);
-  };
-
-  // Approve a pending recipe
-  const approveRecipe = (recipeId, e) => {
-    e.stopPropagation(); // Prevent row click event
-    setRecipes(prevRecipes => 
-      prevRecipes.map(recipe => 
-        recipe.id === recipeId 
-          ? { ...recipe, status: 'published' } 
-          : recipe
-      )
-    );
-  };
-
-  // Reject a pending recipe
-  const rejectRecipe = (recipeId, e) => {
-    e.stopPropagation(); // Prevent row click event
-    setRecipes(prevRecipes => 
-      prevRecipes.map(recipe => 
-        recipe.id === recipeId 
-          ? { ...recipe, status: 'rejected' } 
-          : recipe
-      )
-    );
-  };
-
-  // Toggle featured status
-  const toggleFeatured = (recipeId, e) => {
-    e.stopPropagation(); // Prevent row click event
-    setRecipes(prevRecipes => 
-      prevRecipes.map(recipe => 
-        recipe.id === recipeId 
-          ? { ...recipe, featured: !recipe.featured } 
-          : recipe
-      )
-    );
-  };
-
-  // Edit recipe
-  const editRecipe = (recipeId, e) => {
-    e.stopPropagation(); // Prevent row click event
-    navigate(`/admin/recipes/edit/${recipeId}`);
-  };
-
   // Delete recipe
-  const deleteRecipe = (recipeId, e) => {
-    e.stopPropagation(); // Prevent row click event
+  const handleDeleteRecipe = async (recipeId, e) => {
+    e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this recipe?')) {
-      setRecipes(prevRecipes => prevRecipes.filter(recipe => recipe.id !== recipeId));
+      try {
+        await deleteRecipeAdmin(recipeId, token);
+        // Remove from local state
+        setRecipes(prevRecipes => prevRecipes.filter(recipe => recipe.id !== recipeId));
+        dispatch({
+          type: 'success',
+          message: 'Recipe deleted successfully',
+          duration: 3000
+        });
+        // Refresh data to update statistics
+        fetchData();
+      } catch (error) {
+        dispatch({
+          type: 'error',
+          message: 'Failed to delete recipe',
+          duration: 3000
+        });
+      }
     }
   };
 
@@ -219,46 +169,39 @@ const RecipeManagement = () => {
       pageDescription="Manage recipes and recipe submissions"
     >
       {/* Recipe Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="rounded-lg shadow p-6" style={{ 
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="rounded-lg shadow p-4 md:p-6" style={{ 
           backgroundColor: themeColors.card,
         }}>
           <h3 style={{ color: themeColors.text.secondary }} className="text-sm font-medium mb-2">Total Recipes</h3>
-          <p className="text-3xl font-bold" style={{ color: themeColors.text.primary }}>248</p>
+          <p className="text-2xl md:text-3xl font-bold" style={{ color: themeColors.text.primary }}>{stats.total}</p>
         </div>
         
-        <div className="rounded-lg shadow p-6" style={{ 
+        <div className="rounded-lg shadow p-4 md:p-6" style={{ 
           backgroundColor: themeColors.card,
         }}>
           <h3 style={{ color: themeColors.text.secondary }} className="text-sm font-medium mb-2">Published</h3>
-          <p className="text-3xl font-bold" style={{ color: themeColors.text.primary }}>230</p>
+          <p className="text-2xl md:text-3xl font-bold" style={{ color: themeColors.text.primary }}>{stats.published}</p>
         </div>
         
-        <div className="rounded-lg shadow p-6" style={{ 
+        <div className="rounded-lg shadow p-4 md:p-6" style={{ 
           backgroundColor: themeColors.card,
         }}>
-          <h3 style={{ color: themeColors.text.secondary }} className="text-sm font-medium mb-2">Pending</h3>
-          <p className="text-3xl font-bold" style={{ color: themeColors.text.primary }}>18</p>
-        </div>
-        
-        <div className="rounded-lg shadow p-6" style={{ 
-          backgroundColor: themeColors.card,
-        }}>
-          <h3 style={{ color: themeColors.text.secondary }} className="text-sm font-medium mb-2">Featured</h3>
-          <p className="text-3xl font-bold" style={{ color: themeColors.text.primary }}>12</p>
+          <h3 style={{ color: themeColors.text.secondary }} className="text-sm font-medium mb-2">Unlisted</h3>
+          <p className="text-2xl md:text-3xl font-bold" style={{ color: themeColors.text.primary }}>{stats.pending}</p>
         </div>
       </div>
 
       {/* Search and Filter */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="flex-1 relative">
+      <div className="flex flex-col sm:flex-row gap-4 my-6">
+        <div className="relative flex-grow">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-5 w-5" style={{ color: themeColors.text.secondary }} />
           </div>
           <input
             type="text"
-            placeholder="Search recipes by title or author..."
-            className="pl-10 pr-4 py-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-opacity-50"
+            placeholder="Search recipes by title or author or category"
+            className="pl-10 pr-4 py-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-opacity-50 text-sm md:text-base"
             style={{ 
               backgroundColor: isDark ? '#3a4556' : 'white',
               color: themeColors.text.primary,
@@ -269,12 +212,12 @@ const RecipeManagement = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="relative w-full md:w-auto">
+        <div className="relative w-full sm:w-48">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Filter className="h-5 w-5" style={{ color: themeColors.text.secondary }} />
           </div>
           <select
-            className="pl-10 pr-8 py-2 rounded-md w-full md:w-48 focus:outline-none focus:ring-2 focus:ring-opacity-50 appearance-none"
+            className="pl-10 pr-8 py-2 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-opacity-50 appearance-none text-sm md:text-base"
             style={{ 
               backgroundColor: isDark ? '#3a4556' : 'white',
               color: themeColors.text.primary,
@@ -285,33 +228,8 @@ const RecipeManagement = () => {
             onChange={(e) => setFilterStatus(e.target.value)}
           >
             <option value="all">All Status</option>
-            <option value="published">Published</option>
-            <option value="pending">Pending</option>
-            <option value="rejected">Rejected</option>
-          </select>
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
-            <svg className="h-4 w-4" style={{ color: themeColors.text.secondary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
-        <div className="relative w-full md:w-auto">
-          <select
-            className="pl-4 pr-8 py-2 rounded-md w-full md:w-48 focus:outline-none focus:ring-2 focus:ring-opacity-50 appearance-none"
-            style={{ 
-              backgroundColor: isDark ? '#3a4556' : 'white',
-              color: themeColors.text.primary,
-              borderColor: isDark ? '#4a5568' : '#e2e8f0',
-              focusRing: themeColors.primary
-            }}
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value.toLowerCase())}
-          >
-            {categories.map((category, index) => (
-              <option key={index} value={index === 0 ? 'all' : category.toLowerCase()}>
-                {category}
-              </option>
-            ))}
+            <option value="active">Published</option>
+            <option value="inactive">Unlisted</option>
           </select>
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
             <svg className="h-4 w-4" style={{ color: themeColors.text.secondary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -322,188 +240,107 @@ const RecipeManagement = () => {
       </div>
 
       {/* Recipes Table */}
-      <div className="rounded-lg shadow mb-8" style={{ 
-        backgroundColor: themeColors.card,
-      }}>
-        <div className="px-6 py-4 border-b" style={{ 
-          borderColor: isDark ? '#3a4556' : '#e2e8f0' 
-        }}>
+      <div className="rounded-lg shadow overflow-hidden" style={{ backgroundColor: themeColors.card }}>
+        <div className="p-4 md:px-6 border-b" style={{ borderColor: isDark ? '#3a4556' : '#e2e8f0' }}>
           <h2 style={{ color: themeColors.text.primary }} className="font-semibold">Recipes</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="text-left" style={{ 
-                backgroundColor: themeColors.table.header,
-              }}>
-                <th className="px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: themeColors.text.secondary }}>Title</th>
-                <th className="px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: themeColors.text.secondary }}>Author</th>
-                <th className="px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: themeColors.text.secondary }}>Category</th>
-                <th className="px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: themeColors.text.secondary }}>Status</th>
-                <th className="px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: themeColors.text.secondary }}>Date</th>
-                <th className="px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: themeColors.text.secondary }}>Views</th>
-                <th className="px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: themeColors.text.secondary }}>Likes</th>
-                <th className="px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: themeColors.text.secondary }}>Featured</th>
-                <th className="px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: themeColors.text.secondary }}>Actions</th>
+              <tr className="text-left" style={{ backgroundColor: themeColors.table.header }}>
+                <th className="px-4 md:px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: themeColors.text.secondary }}>Title</th>
+                <th className="px-4 md:px-6 py-3 text-xs font-medium uppercase tracking-wider hidden sm:table-cell" style={{ color: themeColors.text.secondary }}>Author</th>
+                <th className="px-4 md:px-6 py-3 text-xs font-medium uppercase tracking-wider hidden md:table-cell" style={{ color: themeColors.text.secondary }}>Category</th>
+                <th className="px-4 md:px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: themeColors.text.secondary }}>Status</th>
+                <th className="px-4 md:px-6 py-3 text-xs font-medium uppercase tracking-wider hidden lg:table-cell" style={{ color: themeColors.text.secondary }}>Date</th>
+                <th className="px-4 md:px-6 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: themeColors.text.secondary }}>Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y" style={{ 
-              borderColor: isDark ? '#3a4556' : '#e2e8f0' 
-            }}>
-              {filteredRecipes.map(recipe => (
-                <tr 
-                  key={recipe.id} 
-                  style={{ backgroundColor: themeColors.table.row }}
-                  className="hover:bg-opacity-80 cursor-pointer"
-                  onClick={() => viewRecipe(recipe.id)}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = themeColors.table.hover}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = themeColors.table.row}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium" style={{ color: themeColors.text.primary }}>{recipe.title}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm" style={{ color: themeColors.text.primary }}>{recipe.author}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm" style={{ color: themeColors.text.primary }}>{recipe.category}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      recipe.status === 'published' 
-                        ? isDark ? 'bg-green-900 text-green-100' : 'bg-green-100 text-green-800'
-                        : recipe.status === 'pending'
-                          ? isDark ? 'bg-yellow-900 text-yellow-100' : 'bg-yellow-100 text-yellow-800'
-                          : isDark ? 'bg-red-900 text-red-100' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {recipe.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm" style={{ color: themeColors.text.primary }}>{recipe.date}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm" style={{ color: themeColors.text.primary }}>{recipe.views}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm" style={{ color: themeColors.text.primary }}>{recipe.likes}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={(e) => toggleFeatured(recipe.id, e)}
-                      className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        recipe.featured
-                          ? isDark ? 'bg-purple-900 text-purple-100' : 'bg-purple-100 text-purple-800'
-                          : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {recipe.featured ? 'Featured' : 'Not Featured'}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex space-x-2">
-                      <button 
-                        className="p-1 rounded hover:bg-opacity-80"
-                        style={{ backgroundColor: isDark ? '#3a4556' : '#e2e8f0' }}
-                        title="View Recipe"
-                        onClick={(e) => viewRecipe(recipe.id)}
-                      >
-                        <Eye className="h-4 w-4" style={{ color: themeColors.text.primary }} />
-                      </button>
-                      {recipe.status === 'pending' && (
-                        <>
-                          <button 
-                            className="p-1 rounded hover:bg-opacity-80"
-                            style={{ backgroundColor: isDark ? '#285e28' : '#d1ffd1' }}
-                            title="Approve Recipe"
-                            onClick={(e) => approveRecipe(recipe.id, e)}
-                          >
-                            <Check className="h-4 w-4" style={{ color: isDark ? '#4ade4a' : '#22c55e' }} />
-                          </button>
-                          <button 
-                            className="p-1 rounded hover:bg-opacity-80"
-                            style={{ backgroundColor: isDark ? '#5e2828' : '#ffd1d1' }}
-                            title="Reject Recipe"
-                            onClick={(e) => rejectRecipe(recipe.id, e)}
-                          >
-                            <X className="h-4 w-4" style={{ color: isDark ? '#de4a4a' : '#ef4444' }} />
-                          </button>
-                        </>
-                      )}
-                      <button 
-                        className="p-1 rounded hover:bg-opacity-80"
-                        style={{ backgroundColor: isDark ? '#3a4556' : '#e2e8f0' }}
-                        title="Delete Recipe"
-                        onClick={(e) => deleteRecipe(recipe.id, e)}
-                      >
-                        <Trash2 className="h-4 w-4" style={{ color: themeColors.text.primary }} />
-                      </button>
-                    </div>
+            <tbody className="divide-y" style={{ borderColor: isDark ? '#3a4556' : '#e2e8f0' }}>
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="px-4 md:px-6 py-4 text-center">
+                    <div style={{ color: themeColors.text.primary }}>Loading...</div>
                   </td>
                 </tr>
-              ))}
+              ) : filteredRecipes.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-4 md:px-6 py-4 text-center">
+                    <div style={{ color: themeColors.text.primary }}>No recipes found</div>
+                  </td>
+                </tr>
+              ) : (
+                filteredRecipes.map(recipe => (
+                  <tr 
+                    key={recipe.id} 
+                    style={{ backgroundColor: themeColors.table.row }}
+                    className="hover:bg-opacity-80"
+                  >
+                    <td className="px-4 md:px-6 py-4">
+                      <div className="text-sm font-medium" style={{ color: themeColors.text.primary }}>{recipe.title}</div>
+                    </td>
+                    <td className="px-4 md:px-6 py-4 hidden sm:table-cell">
+                      <div className="text-sm" style={{ color: themeColors.text.primary }}>{recipe.owner?.username || 'Unknown'}</div>
+                    </td>
+                    <td className="px-4 md:px-6 py-4 hidden md:table-cell">
+                      <div className="text-sm" style={{ color: themeColors.text.primary }}>{recipe.mealType || 'Uncategorized'}</div>
+                    </td>
+                    <td className="px-4 md:px-6 py-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
+                        <label className="inline-flex items-center">
+                          <input
+                            type="radio"
+                            name={`status-${recipe.id}`}
+                            value="active"
+                            checked={recipe.active}
+                            onChange={() => handleStatusChange(recipe.id, 'active')}
+                            className="form-radio h-4 w-4 text-green-600"
+                          />
+                          <span className="ml-2 text-xs sm:text-sm" style={{ color: themeColors.text.primary }}>Published</span>
+                        </label>
+                        <label className="inline-flex items-center">
+                          <input
+                            type="radio"
+                            name={`status-${recipe.id}`}
+                            value="inactive"
+                            checked={!recipe.active}
+                            onChange={() => handleStatusChange(recipe.id, 'inactive')}
+                            className="form-radio h-4 w-4 text-yellow-600"
+                          />
+                          <span className="ml-2 text-xs sm:text-sm" style={{ color: themeColors.text.primary }}>Unlisted</span>
+                        </label>
+                      </div>
+                    </td>
+                    <td className="px-4 md:px-6 py-4 hidden lg:table-cell">
+                      <div className="text-sm" style={{ color: themeColors.text.primary }}>
+                        {new Date(recipe.dateCreated).toLocaleDateString()}
+                      </div>
+                    </td>
+                    <td className="px-4 md:px-6 py-4">
+                      <div className="flex space-x-2">
+                        <button 
+                          className="p-1 rounded hover:bg-opacity-80"
+                          style={{ backgroundColor: isDark ? '#3a4556' : '#e2e8f0' }}
+                          title="View Recipe"
+                          onClick={() => navigate(`/recipe/${recipe.id}`)}
+                        >
+                          <Eye className="h-4 w-4" style={{ color: themeColors.text.primary }} />
+                        </button>
+                        <button 
+                          className="p-1 rounded hover:bg-opacity-80"
+                          style={{ backgroundColor: isDark ? '#3a4556' : '#e2e8f0' }}
+                          title="Delete Recipe"
+                          onClick={(e) => handleDeleteRecipe(recipe.id, e)}
+                        >
+                          <Trash2 className="h-4 w-4" style={{ color: themeColors.text.primary }} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      {/* Pending Recipes Section */}
-      <div className="rounded-lg shadow mb-6" style={{ 
-        backgroundColor: themeColors.card,
-      }}>
-        <div className="px-6 py-4 border-b" style={{ 
-          borderColor: isDark ? '#3a4556' : '#e2e8f0' 
-        }}>
-          <h2 style={{ color: themeColors.text.primary }} className="font-semibold">Pending Approval</h2>
-        </div>
-        <div className="p-6">
-          {recipes.filter(recipe => recipe.status === 'pending').length === 0 ? (
-            <p style={{ color: themeColors.text.secondary }} className="text-center py-4">No recipes waiting for approval</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recipes
-                .filter(recipe => recipe.status === 'pending')
-                .map(recipe => (
-                  <div 
-                    key={recipe.id} 
-                    className="border rounded-lg p-4 cursor-pointer hover:brightness-90 transition-all"
-                    style={{ 
-                      backgroundColor: isDark ? '#3a4556' : 'white',
-                      borderColor: isDark ? '#4a5568' : '#e2e8f0'
-                    }}
-                    onClick={() => viewRecipe(recipe.id)}
-                  >
-                    <h3 className="font-medium mb-2" style={{ color: themeColors.text.primary }}>{recipe.title}</h3>
-                    <div className="mb-2">
-                      <span className="text-sm" style={{ color: themeColors.text.secondary }}>By </span>
-                      <span className="text-sm font-medium" style={{ color: themeColors.text.primary }}>{recipe.author}</span>
-                    </div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-sm" style={{ color: themeColors.text.secondary }}>
-                        Category: <span style={{ color: themeColors.text.primary }}>{recipe.category}</span>
-                      </span>
-                      <span className="text-sm" style={{ color: themeColors.text.secondary }}>
-                        {recipe.date}
-                      </span>
-                    </div>
-                    <div className="flex justify-between mt-4" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className="px-3 py-1 rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700"
-                        onClick={(e) => approveRecipe(recipe.id, e)}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        className="px-3 py-1 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700"
-                        onClick={(e) => rejectRecipe(recipe.id, e)}
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
         </div>
       </div>
     </AdminLayout>
