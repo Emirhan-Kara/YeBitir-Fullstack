@@ -241,25 +241,17 @@ export const getRecipeById = async (id) => {
 
 export const createRecipe = async (recipeData, image, token) => {
   try {
-    if (!token) {
-      throw new Error('No authentication token provided');
-    }
-
     const formData = new FormData();
-    
-    // Convert recipe data to JSON string and append to form data
-    const recipeBlob = new Blob([JSON.stringify(recipeData)], {
-      type: 'application/json'
-    });
+    const recipeBlob = new Blob([JSON.stringify(recipeData)], { type: 'application/json' });
     formData.append('recipe', recipeBlob);
 
-    // Append image if it exists
+    // Append image if it exists and is valid
     if (image) {
+      if (!(image instanceof File)) {
+        throw new Error('Invalid image file');
+      }
       formData.append('image', image);
     }
-
-    // Log the request details for debugging
-    console.log('Creating recipe with token:', token);
 
     const response = await fetch(`${API_BASE_URL}/recipes`, {
       method: 'POST',
@@ -273,8 +265,7 @@ export const createRecipe = async (recipeData, image, token) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Failed to create recipe' }));
-      console.error('Recipe creation failed:', response.status, errorData);
+      const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to create recipe');
     }
 
@@ -334,69 +325,68 @@ export const searchRecipes = async (query) => {
     
     const queryString = params.toString();
     const response = await fetch(`${API_BASE_URL}/recipes/search?${queryString}`);
-    return handleResponse(response);
+    const result = await handleResponse(response);
+    
+    // Ensure we return an array
+    if (Array.isArray(result)) {
+      return result;
+    } else if (result && typeof result === 'object') {
+      if (result.data && Array.isArray(result.data)) {
+        return result.data;
+      } else if (result.recipes && Array.isArray(result.recipes)) {
+        return result.recipes;
+      } else {
+        // Convert object with numeric keys to array if needed
+        const recipeArray = Object.keys(result)
+          .filter(key => !isNaN(key))
+          .map(key => result[key]);
+        if (recipeArray.length > 0) {
+          return recipeArray;
+        }
+      }
+    }
+    return []; // Return empty array if no valid data format found
   } else {
     // Handle text search
     const response = await fetch(`${API_BASE_URL}/recipes/search?query=${encodeURIComponent(query)}`);
-    return handleResponse(response);
+    const result = await handleResponse(response);
+    
+    // Apply the same array handling logic
+    if (Array.isArray(result)) {
+      return result;
+    } else if (result && typeof result === 'object') {
+      if (result.data && Array.isArray(result.data)) {
+        return result.data;
+      } else if (result.recipes && Array.isArray(result.recipes)) {
+        return result.recipes;
+      } else {
+        const recipeArray = Object.keys(result)
+          .filter(key => !isNaN(key))
+          .map(key => result[key]);
+        if (recipeArray.length > 0) {
+          return recipeArray;
+        }
+      }
+    }
+    return []; // Return empty array if no valid data format found
   }
 };
 
-export const filterRecipes = async (filters) => {
-  try {
-    const queryParams = new URLSearchParams();
-    
-    // Convert filters to a query string format
-    let queryString = '';
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== '' && value !== 'Any') {
-        if (key === 'recipeName') {
-          queryString = value; // Use recipe name as the main query
-        } else {
-          queryParams.append(key, value);
-        }
-      }
-    });
-
-    // Always include a query parameter, even if empty
-    queryParams.append('query', queryString);
-
-    const url = `${API_BASE_URL}/recipes/search?${queryParams}`;
-    console.log('Making request to:', url);
-
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    });
-
-    const result = await handleResponse(response);
-    console.log('Response data:', result);
-
-    // Extract recipes from the response based on its structure
-    let recipes = [];
-    if (Array.isArray(result)) {
-      recipes = result;
-    } else if (result && typeof result === 'object') {
-      // Check if the result is an object with numeric keys
-      const numericKeys = Object.keys(result).filter(key => !isNaN(key));
-      if (numericKeys.length > 0) {
-        recipes = numericKeys.map(key => result[key]);
-      } else if (result.recipes && Array.isArray(result.recipes)) {
-        recipes = result.recipes;
-      } else if (result.data && Array.isArray(result.data)) {
-        recipes = result.data;
-      }
+export const filterRecipes = async (filterData) => {
+  // Clean up filter data to remove "Any" values
+  const cleanedFilters = {};
+  Object.entries(filterData).forEach(([key, value]) => {
+    if (value && value !== '' && value !== 'Any') {
+      cleanedFilters[key] = value;
     }
-
-    console.log('Processed recipes:', recipes);
-    return recipes;
-  } catch (error) {
-    console.error('Error filtering recipes:', error);
-    return [];
-  }
+  });
+  
+  const response = await fetch(`${API_BASE_URL}/recipes/filter`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cleanedFilters)
+  });
+  return handleResponse(response);
 };
 
 // Comment services
@@ -515,48 +505,21 @@ export const deleteComment = async (commentId, token) => {
 };
 
 // User services
-export const getUserProfile = async (tokenOrUsername) => {
-  try {
-    // If it looks like a JWT token (contains dots and is long), use the /profile endpoint
-    const isToken = typeof tokenOrUsername === 'string' && tokenOrUsername.split('.').length === 3;
-    const endpoint = isToken ? `${API_BASE_URL}/users/profile` : `${API_BASE_URL}/users/${tokenOrUsername}`;
-    
-    const headers = isToken ? {
-      'Authorization': `Bearer ${tokenOrUsername}`,
-      'Accept': 'application/json'
-    } : {
-      'Accept': 'application/json'
-    };
-
-    const response = await fetch(endpoint, {
-      headers,
-      credentials: 'include'
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await handleResponse(response);
-
-    // Process the data to ensure we return a consistent format
-    return {
-      username: result.username,
-      bio: result.bio || "",
-      profileImage: result.profileImage,
-      joinDate: result.joinDate || new Date().toISOString(),
-      email: result.email
-    };
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
-    return {
-      username: typeof tokenOrUsername === 'string' ? tokenOrUsername : 'Unknown',
-      bio: "Error loading profile",
-      profileImage: null,
-      joinDate: new Date().toISOString(),
-      email: ''
-    };
+export const getUserProfile = async (token) => {
+  if (!token) {
+    throw new Error('No authentication token provided');
   }
+  const response = await fetch(`${API_BASE_URL}/users/profile`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include',
+    mode: 'cors'
+  });
+  return handleResponse(response);
 };
 
 export const getUserByUsername = async (username) => {
@@ -618,28 +581,15 @@ export const deleteUserAccount = async (token) => {
 
 export const getUserRecipes = async (username) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/recipes/user/${username}`);
-    const result = await handleResponse(response);
-    
-    // Handle different response formats
-    let recipes;
-    if (Array.isArray(result)) {
-      recipes = result;
-    } else if (result.recipes && Array.isArray(result.recipes)) {
-      recipes = result.recipes;
-    } else if (result.data && Array.isArray(result.data)) {
-      recipes = result.data;
-    } else if (typeof result === 'object') {
-      // Convert object with numeric keys to array if needed
-      recipes = Object.keys(result)
-        .filter(key => !isNaN(key))
-        .map(key => result[key]);
+    const response = await fetch(`${API_BASE_URL}/users/${username}/recipes`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
-    return recipes || [];
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error('Error fetching user recipes:', error);
-    return [];
+    throw error;
   }
 };
 
@@ -833,157 +783,4 @@ export const getRandomRecipes = async (limit = 10, excludeId = null) => {
   }
   
   return [];
-};
-
-export const getLoggedInUserRecipes = async (token) => {
-  if (!token) {
-    throw new Error('No authentication token provided');
-  }
-  const response = await fetch(`${API_BASE_URL}/users/my-recipes`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    credentials: 'include',
-    mode: 'cors'
-  });
-  return handleResponse(response);
-};
-
-export const addDummyRecipes = async () => {
-  try {
-    console.log('Starting to add dummy recipes...');
-    
-    const dummyRecipes = [
-      {
-        title: "Chicken Tikka Masala",
-        description: "Rich and creamy Indian curry with tender chicken",
-        ingredients: [
-          "2 lbs chicken breast",
-          "2 cups yogurt",
-          "2 tbsp garam masala",
-          "1 can tomato sauce",
-          "1 cup heavy cream",
-          "Fresh cilantro",
-          "Basmati rice",
-          "Naan bread"
-        ],
-        instructions: [
-          "Marinate chicken in yogurt and spices",
-          "Grill or broil chicken until charred",
-          "Prepare sauce with tomatoes and cream",
-          "Combine chicken with sauce",
-          "Simmer until thick",
-          "Serve with rice and naan"
-        ],
-        prepTimeMinutes: 30,
-        cookTimeMinutes: 45,
-        servings: 6,
-        difficulty: "MEDIUM",
-        cuisineType: "INDIAN",
-        mealType: "DINNER",
-        dietaryRestrictions: [],
-        userId: 1
-      },
-      {
-        title: "Spaghetti Carbonara",
-        description: "Classic Italian pasta dish with eggs and pancetta",
-        ingredients: [
-          "1 lb spaghetti",
-          "4 large eggs",
-          "1 cup Pecorino Romano",
-          "1/2 cup Parmigiano-Reggiano",
-          "4 oz pancetta",
-          "4 cloves garlic",
-          "Black pepper",
-          "Salt"
-        ],
-        instructions: [
-          "Cook pasta in salted water",
-          "Crisp pancetta in a pan",
-          "Mix eggs and cheese",
-          "Combine hot pasta with egg mixture",
-          "Add pancetta and pepper",
-          "Serve immediately"
-        ],
-        prepTimeMinutes: 15,
-        cookTimeMinutes: 20,
-        servings: 4,
-        difficulty: "EASY",
-        cuisineType: "ITALIAN",
-        mealType: "DINNER",
-        dietaryRestrictions: [],
-        userId: 1
-      },
-      {
-        title: "Green Thai Curry",
-        description: "Spicy and aromatic Thai curry with coconut milk",
-        ingredients: [
-          "Green curry paste",
-          "Coconut milk",
-          "Chicken or tofu",
-          "Thai eggplants",
-          "Bamboo shoots",
-          "Thai basil",
-          "Fish sauce",
-          "Palm sugar"
-        ],
-        instructions: [
-          "Heat coconut milk in pan",
-          "Add curry paste and stir",
-          "Add protein of choice",
-          "Add vegetables",
-          "Season with fish sauce and sugar",
-          "Garnish with Thai basil"
-        ],
-        prepTimeMinutes: 20,
-        cookTimeMinutes: 30,
-        servings: 4,
-        difficulty: "MEDIUM",
-        cuisineType: "THAI",
-        mealType: "DINNER",
-        dietaryRestrictions: [],
-        userId: 1
-      }
-    ];
-
-    console.log('Adding dummy recipes one by one...');
-    const results = [];
-
-    // Add recipes one by one using the public endpoint
-    for (const recipe of dummyRecipes) {
-      try {
-        const response = await fetch(`${API_BASE_URL}/recipes/public`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(recipe)
-        });
-
-        if (!response.ok) {
-          console.error(`Failed to add recipe ${recipe.title}:`, response.status);
-          continue;
-        }
-
-        const result = await response.json();
-        console.log(`Successfully added recipe: ${recipe.title}`);
-        results.push(result);
-
-        // Add a small delay between requests to prevent overwhelming the server
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } catch (error) {
-        console.error(`Error adding recipe ${recipe.title}:`, error);
-      }
-    }
-
-    console.log('Finished adding dummy recipes:', results);
-    return results;
-  } catch (error) {
-    console.error('Error in addDummyRecipes:', error);
-    throw error;
-  }
 };

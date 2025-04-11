@@ -7,14 +7,14 @@ import RecipeCard from './RecipeCard';
 import AnimatedFoodIcons from './AnimatedFoodIcons';
 import { 
   getUserProfile, 
-  getLoggedInUserRecipes,
+  getUserRecipes, 
   getSavedRecipes,
   updateUserProfile,
   updateUserPassword,
   deleteUserAccount,
-  updateProfilePicture,
-  addDummyRecipes
+  updateProfilePicture
 } from '../services/ApiService';
+import { addSampleRecipes } from '../scripts/addSampleRecipes';
 
 // Memoized AnimatedFoodIconsBackground component to prevent re-renders
 const AnimatedFoodIconsBackground = React.memo(({ count }) => {
@@ -108,11 +108,11 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
       setIsLoading(true);
 
       try {
-        // Fetch user profile
+        // Fetch user profile first
         const profileData = await getUserProfile(token);
         setUserData(profileData);
         
-        // Set both form data and original values
+        // Set form data and original values
         const newFormData = {
           username: profileData.username || '',
           bio: profileData.bio || '',
@@ -123,9 +123,11 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
         }));
         setOriginalValues(newFormData);
 
-        // Fetch user's recipes
-        try {
-          const recipesData = await getLoggedInUserRecipes(token);
+        // Now that we have the username, fetch recipes
+        if (profileData.username) {
+          console.log('Fetching user recipes...');
+          const recipesData = await getUserRecipes(profileData.username);
+          console.log('User recipes response:', recipesData);
           
           let processedRecipes = [];
           
@@ -137,11 +139,6 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
               processedRecipes = recipesData.data;
             } else if (recipesData.recipes && Array.isArray(recipesData.recipes)) {
               processedRecipes = recipesData.recipes;
-            } else {
-              // Try to convert object with numeric keys to array
-              processedRecipes = Object.keys(recipesData)
-                .filter(key => !isNaN(key))
-                .map(key => recipesData[key]);
             }
           }
           
@@ -150,15 +147,12 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
             ...prev,
             recipesCount: processedRecipes.length
           }));
-        } catch (recipeErr) {
-          console.error('Error fetching user recipes:', recipeErr);
-          showNotification('error', 'Failed to load your recipes. Please try again later.');
-          setMyRecipes([]);
         }
 
         // Fetch saved recipes
         try {
           const savedRecipesData = await getSavedRecipes(token);
+          console.log('Fetched saved recipes data:', savedRecipesData);
           
           let processedSavedRecipes = [];
           
@@ -189,6 +183,7 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
             servings: recipe.servings || 1
           }));
           
+          console.log('Processed saved recipes:', processedSavedRecipes);
           setSavedRecipes(processedSavedRecipes);
           setUserData(prev => ({
             ...prev,
@@ -478,16 +473,6 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
 
   const handleProfilePictureClick = () => {
     fileInputRef.current?.click();
-  };
-
-  const handleAddSampleRecipes = async () => {
-    try {
-      await addDummyRecipes();
-      alert('Sample recipes added successfully!');
-    } catch (error) {
-      console.error('Error adding sample recipes:', error);
-      alert('Failed to add sample recipes: ' + error.message);
-    }
   };
 
   if (isLoading) {
@@ -1029,7 +1014,15 @@ const ProfilePage = ({ initialTab = 'myRecipes' }) => {
                   </h3>
                   <div className="space-y-4">
                     <button 
-                      onClick={handleAddSampleRecipes}
+                      onClick={async () => {
+                        try {
+                          await addSampleRecipes(token);
+                          showNotification('success', 'Sample recipes added successfully!');
+                        } catch (err) {
+                          console.error('Error adding sample recipes:', err);
+                          showNotification('error', 'Failed to add sample recipes');
+                        }
+                      }}
                       className="flex items-center transition-all duration-300 hover:translate-x-2 hover:font-medium p-2 rounded-md hover:bg-opacity-10 hover:bg-white"
                       style={{ color: theme.headerfooter.logoRed }}
                     >

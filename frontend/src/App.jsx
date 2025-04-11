@@ -24,7 +24,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import KVKKCompliance from "./components/KVKKCompliance";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import { NotificationProvider } from './context/NotificationContext';
-import RecipeSearchPage from './components/RecipeSearchPage';
 
 // Layout component that conditionally renders Header based on current path
 const MainLayout = () => {
@@ -42,7 +41,7 @@ const MainLayout = () => {
               <ProfilePage />
             </ProtectedRoute>
           } />
-          <Route path="/recipes" element={<RecipeSearchPage />} />
+          <Route path="/recipes" element={<SearchPage />} />
           <Route path="/recipe/:recipeId" element={<RecipePage />} />
           <Route path="/recipe-wheel" element={<RecipeWheel />} />
           <Route path="/about" element={<AboutUs />} />

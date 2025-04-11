@@ -19,7 +19,20 @@ const CommentsSection = ({
   const { theme } = useTheme();
   const { isLoggedIn, currentUser, token } = useAuth();
 
-  // Fetch comments when component mounts
+  // Debug logging for auth state
+  useEffect(() => {
+    console.log('Auth state in CommentsSection:', {
+      isLoggedIn,
+      currentUser: currentUser ? {
+        id: currentUser.id,
+        username: currentUser.username,
+        email: currentUser.email
+      } : null,
+      hasToken: !!token
+    });
+  }, [isLoggedIn, currentUser, token]);
+
+  // Fetch comments when component mounts or auth state changes
   useEffect(() => {
     const fetchComments = async () => {
       try {
@@ -50,7 +63,7 @@ const CommentsSection = ({
     };
 
     fetchComments();
-  }, [recipeId, isLoggedIn]);
+  }, [recipeId, isLoggedIn, currentUser]); // Add currentUser to dependencies
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -330,7 +343,15 @@ const CommentsSection = ({
               <div className="flex items-start mb-2">
                 <div className="flex-1">
                   <div className="flex justify-between items-baseline">
-                    <Link to={`/profile/${comment.authorId}`} className="font-semibold hover:underline">
+                    <Link 
+                      to={comment.author === currentUser?.username ? '/profile' : `/profile/${comment.author}`} 
+                      className="font-semibold hover:underline"
+                      onClick={() => {
+                        console.log('Comment authorId:', comment.authorId);
+                        console.log('Current user id:', currentUser?.id);
+                        console.log('Are they equal?', comment.authorId === currentUser?.id);
+                      }}
+                    >
                       {comment.author || 'Anonymous'}
                     </Link>
                     <div className="flex items-center">

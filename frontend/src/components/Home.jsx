@@ -253,6 +253,65 @@ const Home = () => {
     fetchRecipes();
   }, []);
   
+  // Quick filter links section
+  const renderQuickFilters = () => {
+    const quickFilters = [
+      {
+        icon: <UtensilsCrossed size={24} />,
+        title: "Main Course",
+        description: "Hearty main dishes",
+        link: "/recipes?mealType=Main Course"
+      },
+      {
+        icon: <Clock size={24} />,
+        title: "Quick Meals",
+        description: "Ready in 30 minutes",
+        link: "/recipes?maxCookingTime=30"
+      },
+      {
+        icon: <Salad size={24} />,
+        title: "Vegetarian",
+        description: "Plant-based recipes",
+        link: "/recipes?diet=Vegetarian"
+      },
+      {
+        icon: <Cherry size={24} />,
+        title: "Desserts",
+        description: "Sweet treats",
+        link: "/recipes?mealType=Dessert"
+      },
+      {
+        icon: <Shuffle size={24} />,
+        title: "Random",
+        description: "Surprise me!",
+        link: "/recipes"
+      }
+    ];
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-8">
+        {quickFilters.map((filter, index) => (
+          <Link
+            key={index}
+            to={filter.link}
+            className="quick-filter-card reveal"
+            style={{
+              backgroundColor: theme.core.container,
+              color: theme.core.text,
+              animationDelay: `${index * 0.1}s`
+            }}
+          >
+            <div className="icon-wrapper" style={{ color: theme.headerfooter.logoRed }}>
+              {filter.icon}
+            </div>
+            <h3 className="text-lg font-semibold mt-2">{filter.title}</h3>
+            <p className="text-sm opacity-75">{filter.description}</p>
+          </Link>
+        ))}
+      </div>
+    );
+  };
+  
   return (
     <div 
       ref={containerRef}
@@ -462,7 +521,7 @@ const Home = () => {
                   backgroundColor: `${theme.core.containerHoover}50`,
                   clipPath: 'polygon(10% 0, 90% 0, 100% 50%, 90% 100%, 10% 100%, 0 50%)'
                 }}
-                onClick={() => navigateTo(`/recipes?ingredient=${ingredient}`)}
+                onClick={() => navigateTo(`/recipes?mainIngredient=${ingredient}`)}
               >
                 <span className="font-medium">{ingredient}</span>
               </div>

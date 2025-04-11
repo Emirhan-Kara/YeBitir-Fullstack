@@ -55,13 +55,76 @@
     }
   }
   
-  /* Filter sidebar styles */
+  /* Main layout container */
+  .search-page-container {
+    display: grid;
+    grid-template-columns: 300px 1fr; /* Filter sidebar and content area */
+    gap: 2rem;
+    padding: 2rem;
+    min-height: calc(100vh - 64px); /* Adjust based on your header height */
+  }
+  
+  /* Filter sidebar */
   .search-filters {
+    position: sticky;
+    top: 2rem;
+    height: fit-content;
     border-radius: 30px;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     padding: 1.5rem;
   }
   
+  /* Recipe grid container */
+  .recipe-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 cards per row */
+    gap: 2rem;
+  }
+  
+  /* Recipe content container */
+  .recipe-content {
+    width: 100%;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 1400px) {
+    .search-page-container {
+      grid-template-columns: 250px 1fr;
+    }
+    .recipe-grid {
+      grid-template-columns: repeat(2, 1fr); /* 2 cards per row */
+    }
+  }
+  
+  @media (max-width: 1024px) {
+    .search-page-container {
+      grid-template-columns: 1fr;
+    }
+    .search-filters {
+      position: relative;
+      top: 0;
+    }
+    .recipe-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .recipe-grid {
+      grid-template-columns: 1fr; /* 1 card per row */
+      justify-items: center; /* Center cards horizontally */
+      max-width: 400px; /* Limit card width on mobile */
+      margin: 0 auto; /* Center the grid container */
+    }
+    
+    .recipe-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+  }
+  
+  /* Filter section styles */
   .filter-heading {
     font-size: 1.25rem;
     font-weight: 700;
@@ -164,19 +227,6 @@
   
   .sort-select:focus {
     box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.5);
-  }
-  
-  .recipe-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1.5rem;
-  }
-  
-  @media (min-width: 768px) {
-    .recipe-grid {
-      justify-content: flex-start;
-    }
   }
   
   /* Empty state */

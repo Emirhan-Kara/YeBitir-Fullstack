@@ -5,26 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import AnimatedFoodIcons from './AnimatedFoodIcons';
 import { createRecipe } from '../services/ApiService';
 import { useNotification } from '../context/NotificationContext';
-
-// Define unitOptions outside the component
-const unitOptions = [
-  {
-    category: "Volume",
-    units: ["cup", "tablespoon", "teaspoon", "ml", "l", "fluid oz", "gallon", "quart", "pint"]
-  },
-  {
-    category: "Weight",
-    units: ["gram", "kg", "oz", "lb", "pound"]
-  },
-  {
-    category: "Count/Pieces",
-    units: ["piece", "whole", "clove", "slice", "can"]
-  },
-  {
-    category: "Special",
-    units: ["pinch", "dash", "to taste", "as needed"]
-  }
-];
+import { cuisineOptions, mealTypeOptions, dietOptions, mainIngredientOptions, unitOptions } from '../constants/recipeOptions';
 
 // Memoized AnimatedFoodIconsBackground component to prevent re-renders
 const AnimatedFoodIconsBackground = React.memo(({ count }) => {
@@ -42,6 +23,8 @@ const AddRecipePage = () => {
   const { theme } = useTheme();
   const { isLoggedIn, token } = useAuth();
   const { dispatch } = useNotification();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Redirect to login if not authenticated
   React.useEffect(() => {
@@ -76,31 +59,6 @@ const AddRecipePage = () => {
   });
   
   const [currentStepText, setCurrentStepText] = useState('');
-
-  // Options for dropdown selects
-  const cuisineOptions = [
-    'Turkish', 'Italian', 'Mexican', 'Chinese', 'Japanese', 'Indian', 
-    'French', 'Mediterranean', 'American', 'Thai', 'Greek', 'Korean',
-    'Middle Eastern', 'Spanish', 'Vietnamese', 'Brazilian', 'Other'
-  ];
-  
-  const mealTypeOptions = [
-    'Breakfast', 'Brunch', 'Lunch', 'Dinner', 'Appetizer', 'Soup', 
-    'Salad', 'Main Course', 'Side Dish', 'Dessert', 'Snack', 'Beverage'
-  ];
-  
-  const dietOptions = [
-    'Regular', 'Vegetarian', 'Vegan', 'Gluten-Free', 'Dairy-Free', 
-    'Low-Carb', 'Keto', 'Paleo', 'Halal', 'Kosher', 'None'
-  ];
-
-  const mainIngredientOptions = [
-    'Beef', 'Chicken', 'Pork', 'Lamb', 'Fish', 'Seafood',
-    'Eggs', 'Tofu', 'Beans', 'Lentils',
-    'Rice', 'Pasta', 'Bread', 'Potatoes',
-    'Vegetables', 'Mushrooms', 'Fruits',
-    'Other'
-  ];
 
   // Add validation states for each step
   const [stepValidation, setStepValidation] = useState({
@@ -290,7 +248,24 @@ const AddRecipePage = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError(null);
+
     try {
+      // Validate image if present
+      if (recipe.photo) {
+        // Check file size (5MB limit)
+        if (recipe.photo.size > 5 * 1024 * 1024) {
+          throw new Error('Image size should not exceed 5MB');
+        }
+
+        // Check file type
+        const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (!validTypes.includes(recipe.photo.type)) {
+          throw new Error('Only JPG and PNG images are allowed');
+        }
+      }
+
       const prepTimeInt = parseInt(recipe.prepTime) || 0;
       const cookTimeInt = parseInt(recipe.cookTime) || 0;
       
@@ -327,6 +302,8 @@ const AddRecipePage = () => {
         message: error.message || 'Failed to create recipe. Please try again.',
         duration: 5000
       });
+    } finally {
+      setLoading(false);
     }
   };
 
