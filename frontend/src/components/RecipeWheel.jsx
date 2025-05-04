@@ -4,7 +4,7 @@ import RecipeCard from './RecipeCard';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import AnimatedFoodIcons from './AnimatedFoodIcons';
-import { getAllRecipes } from '../services/ApiService';
+import { getAllRecipes, filterRecipes } from '../services/ApiService';
 import './RecipeWheel.css'; // This now contains all our CSS
 
 // Memoized AnimatedFoodIconsBackground component to prevent re-renders
@@ -109,94 +109,105 @@ const RecipeWheel = () => {
     }
     
     try {
-      // Get all recipes first
-      const allRecipes = await getAllRecipes();
-      
-      if (!allRecipes || allRecipes.length === 0) {
-        throw new Error('No recipes available');
-      }
-      
       // Check if any actual filters are applied
       const hasActiveFilters = Object.values(filters).some(value => value !== 'Any');
       
-      // Apply filters client-side
-      let filteredRecipes = [...allRecipes];
-      
+      let response;
       if (hasActiveFilters) {
-        // Apply each filter
+        // Create query parameters exactly matching database values
+        const queryParams = {};
+        
+        // Only add filters that are not 'Any'
         if (filters.cuisine !== 'Any') {
-          filteredRecipes = filteredRecipes.filter(recipe => {
-            // Deep search for cuisine in multiple possible locations
-            if (!recipe) return false;
-            const recipeStr = JSON.stringify(recipe).toLowerCase();
-            return recipeStr.includes(filters.cuisine.toLowerCase());
-          });
+          queryParams.cuisine = filters.cuisine;
         }
-        
         if (filters.mealType !== 'Any') {
-          filteredRecipes = filteredRecipes.filter(recipe => {
-            // Deep search for meal type
-            if (!recipe) return false;
-            const recipeStr = JSON.stringify(recipe).toLowerCase();
-            return recipeStr.includes(filters.mealType.toLowerCase());
-          });
+          queryParams.mealType = filters.mealType;
         }
-        
         if (filters.diet !== 'Any') {
-          filteredRecipes = filteredRecipes.filter(recipe => {
-            // Deep search for diet
-            if (!recipe) return false;
-            const recipeStr = JSON.stringify(recipe).toLowerCase();
-            return recipeStr.includes(filters.diet.toLowerCase());
-          });
+          queryParams.diet = filters.diet;
+        }
+        if (filters.mainIngredient !== 'Any') {
+          queryParams.mainIngredient = filters.mainIngredient;
         }
         
-        if (filters.mainIngredient !== 'Any') {
-          filteredRecipes = filteredRecipes.filter(recipe => {
-            // Check ingredients
-            if (!recipe) return false;
-            const recipeStr = JSON.stringify(recipe).toLowerCase();
-            return recipeStr.includes(filters.mainIngredient.toLowerCase());
-          });
+        console.log('Sending query with params:', queryParams); // Debug log
+        response = await filterRecipes(queryParams);
+      } else {
+        // If no filters, get all recipes
+        response = await getAllRecipes();
+      }
+      
+      console.log('API Response:', response); // Debug log
+      
+      // Ensure we have an array of recipes
+      let recipes = [];
+      if (Array.isArray(response)) {
+        recipes = response;
+      } else if (response && typeof response === 'object') {
+        // If response is an object, try to extract recipes array
+        if (response.data && Array.isArray(response.data)) {
+          recipes = response.data;
+        } else if (response.recipes && Array.isArray(response.recipes)) {
+          recipes = response.recipes;
+        } else {
+          // Try to convert object to array if it has numeric keys
+          recipes = Object.keys(response)
+            .filter(key => !isNaN(key))
+            .map(key => response[key]);
         }
+      }
+      
+      // Filter out any null or undefined recipes
+      recipes = recipes.filter(recipe => recipe != null);
+      
+      console.log('Processed recipes:', recipes); // Debug log
+      
+      if (!recipes || recipes.length === 0) {
+        throw new Error('No recipes match your filters');
       }
       
       // Wait for the wheel to finish spinning
       setTimeout(() => {
         setIsSpinning(false);
         
-        if (filteredRecipes.length > 0) {
-          // Select a random recipe from filtered results
-          const randomIndex = Math.floor(Math.random() * filteredRecipes.length);
-          const matchingRecipe = filteredRecipes[randomIndex];
-          
-          setSelectedRecipe(matchingRecipe);
-          setShowRecipe(true);
-          
-          setTimeout(() => {
-            if (recipeCardRef.current) {
-              recipeCardRef.current.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center'
-              });
-            }
-          }, 100);
-        } else {
-          setError('No recipes match your filters. Would you like to add one?');
-        }
+        // Select a random recipe from filtered results
+        const randomIndex = Math.floor(Math.random() * recipes.length);
+        const selectedRecipe = recipes[randomIndex];
+        
+        console.log('Selected recipe:', selectedRecipe); // Debug log
+        
+        setSelectedRecipe(selectedRecipe);
+        setShowRecipe(true);
+        
+        // Scroll to the recipe card
+        setTimeout(() => {
+          if (recipeCardRef.current) {
+            recipeCardRef.current.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center'
+            });
+          }
+        }, 100);
       }, 3000);
-    } catch {
+    } catch (error) {
+      console.error('Error fetching recipes:', error); // Debug log
+      
       // Wait for wheel to finish spinning
       setTimeout(() => {
         setIsSpinning(false);
         setError('No recipes match your filters. Would you like to add one?');
+        // Keep the previous recipe visible if it exists
+        if (!selectedRecipe) {
+          setShowRecipe(false);
+        }
       }, 3000);
     }
   };
   
   // Function to navigate to the recipe page
   const viewRecipeDetails = () => {
-    if (selectedRecipe) {
+    if (selectedRecipe && selectedRecipe.id) {
       navigate(`/recipe/${selectedRecipe.id}`);
     }
   };
